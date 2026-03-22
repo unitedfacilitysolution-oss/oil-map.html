@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+
 <style>
   #ufs-market-page * { box-sizing: border-box; margin: 0; padding: 0; }
   #ufs-market-page {
@@ -359,7 +359,17 @@
       <span class="ctrl-dot" style="background:#c9a84c"></span> Tanker Routes
     </button>
     <div class="ctrl-divider"></div>
+    <button class="ctrl-btn" id="btn-tankers" style="--c:#00e5ff" onclick="toggleTankerFeed(this)">
+      <span class="ctrl-dot" style="background:#00e5ff"></span> Live Tankers
+    </button>
+    <div class="ctrl-divider"></div>
     <button class="reset-btn" onclick="resetView()">Reset View</button>
+  </div>
+
+  <!-- AIS STATUS BAR -->
+  <div id="ais-status" style="display:none;background:#031a26;padding:8px 48px;font-family:Verdana,sans-serif;font-size:10px;color:#00e5ff;border-bottom:1px solid rgba(0,229,255,0.15);">
+    <span id="ais-status-text">Connecting to AIS stream...</span>
+    <span id="ais-count" style="margin-left:16px;color:#c9a84c;"></span>
   </div>
 
   <!-- MAP -->
@@ -404,6 +414,7 @@
       <div class="leg-item"><div class="leg-dot" style="background:#c94c9a"></div> Govt Entities / NOCs</div>
       <div class="leg-item"><div class="leg-dot" style="background:#5aaa6a"></div> Export Terminals</div>
       <div class="leg-item"><div class="leg-line" style="background:#c9a84c;border-top:2px dashed #c9a84c;height:0"></div> Tanker Routes</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#00e5ff;box-shadow:0 0 6px #00e5ff"></div> Live Tankers (AIS)</div>
     </div>
   </div>
 
@@ -464,8 +475,16 @@
 
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
+(function(){
+  if(!document.getElementById('leaflet-css-ufs')){
+    var lCss=document.createElement('link');
+    lCss.id='leaflet-css-ufs';
+    lCss.rel='stylesheet';
+    lCss.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+    document.head.appendChild(lCss);
+  }
+  function initMap(){
 (function(){
 
   var DEFAULT_CENTER = [20, 15];
@@ -578,7 +597,56 @@
     { lat:0.5, lng:101.4, name:'Indonesia', country:'Republic of Indonesia', detail:'Pertamina is national company. Minas and Duri crude grades. Production declining from peak but Indonesia remains a significant regional player.', mbpd:'~0.61 Mbpd production' },
     { lat:20.9, lng:107.0, name:'Vietnam', country:'Socialist Republic of Vietnam', detail:'PetroVietnam is national company. Bach Ho (White Tiger) field is major producer. Light sweet crude exported primarily to East Asian refiners.', mbpd:'~0.20 Mbpd production' },
     { lat:28.0, lng:84.0, name:'India (Offshore)', country:'Republic of India', detail:'ONGC is national company. Mumbai High field is flagship offshore asset. India is a large net importer despite domestic production.', mbpd:'~0.55 Mbpd domestic' },
-    { lat:37.0, lng:75.0, name:'China (Xinjiang)', country:'People\'s Republic of China', detail:'CNPC/PetroChina operates Tarim Basin fields. Daqing in northeast is flagship onshore field. China is world\'s 4th largest producer but much larger importer.', mbpd:'~4.0 Mbpd domestic' }
+    { lat:37.0, lng:75.0, name:'China (Xinjiang)', country:'People\'s Republic of China', detail:'CNPC/PetroChina operates Tarim Basin fields. Daqing in northeast is flagship onshore field. China is world\'s 4th largest producer but much larger importer.', mbpd:'~4.0 Mbpd domestic' },
+
+    // IOC SUPERMAJORS
+    { lat:51.5, lng:-0.1, name:'BP (British Petroleum)', country:'United Kingdom', detail:'Supermajor with upstream assets in 30+ countries. Key producing regions: Gulf of Mexico, North Sea, Azerbaijan ACG field, Angola, Iraq, and Oman. Partner in Greater Tortue Ahmeyim LNG project at Senegal/Mauritania border which began production in 2025.', mbpd:'~2.3 Mbpd BOE' },
+    { lat:52.3, lng:4.9, name:'Shell plc', country:'Netherlands / UK', detail:'Global supermajor with upstream in 70+ countries. Key assets: Prelude FLNG (Australia), Perdido (Gulf of Mexico), Nigeria Bonga deepwater, and North Sea. Merging UK North Sea assets with Equinor creating the basin\'s largest independent producer.', mbpd:'~2.9 Mbpd BOE' },
+    { lat:48.9, lng:2.4, name:'TotalEnergies', country:'France', detail:'French supermajor with major upstream in Africa, Middle East, and North Sea. Key assets: Uganda Tilenga, Angola deepwater, Iraq Al Halfaya, Qatar NFE LNG, and Ivory Coast Baleine field. Plans 3% annual production growth to 2030.', mbpd:'~2.5 Mbpd BOE' },
+    { lat:45.4, lng:9.1, name:'Eni S.p.A.', country:'Italy', detail:'Italian supermajor with the strongest Africa upstream portfolio of any IOC. Key assets: Angola, Ivory Coast Baleine field, Mozambique Coral FLNG, Libya Waha, and Egypt Zohr gas field. Known for fast-tracking projects on time and under budget.', mbpd:'~1.7 Mbpd BOE' },
+    { lat:59.9, lng:10.7, name:'Equinor', country:'Norway', detail:'Norwegian supermajor majority owned by Norwegian state. World\'s largest deepwater operator. Key assets: Johan Sverdrup (Norway, ~700,000 bpd), Angola blocks, Algeria, Brazil Roncador, and US Gulf of Mexico. Merging UK North Sea assets with Shell.', mbpd:'~1.3 Mbpd BOE' },
+    { lat:48.2, lng:16.3, name:'OMV', country:'Austria', detail:'Austrian integrated oil and gas company with upstream in Norway, Romania via Petrom subsidiary, Libya, Tunisia, UAE, and Malaysia. Romania is a large conventional asset base. Focused on growing upstream internationally.', mbpd:'~0.4 Mbpd BOE' },
+    { lat:40.3, lng:-3.6, name:'Repsol', country:'Spain', detail:'Spanish integrated independent with upstream in Libya Waha field, Algeria, Trinidad, Peru, and North Sea. Also a major Spanish refiner. Plans to increase Libyan output through deeper IOC collaboration. ~0.6 Mbpd BOE production.', mbpd:'~0.6 Mbpd BOE' },
+
+    // LARGE US INDEPENDENTS
+    { lat:29.6, lng:-95.3, name:'ConocoPhillips', country:'United States', detail:'World\'s largest independent E&P company. Key assets: Permian Basin, Eagle Ford, Bakken, Alaska North Slope Willow Project, Norway, Australia Barossa LNG, and Malaysia. Acquired Marathon Oil in 2024 for $22.5 billion. Pure upstream focus with no downstream operations.', mbpd:'~1.8 Mbpd BOE' },
+    { lat:29.7, lng:-95.5, name:'EOG Resources', country:'United States', detail:'One of the most efficient US shale producers. Operates primarily in Permian Basin, Eagle Ford (Texas), Bakken (North Dakota), DJ Basin (Colorado), and international assets in Trinidad and Tobago. Known for proprietary drilling technology and low break-even costs.', mbpd:'~1.0 Mbpd BOE' },
+    { lat:29.8, lng:-95.6, name:'Occidental Petroleum', country:'United States', detail:'Major US independent with Permian Basin core assets — largest Permian acreage holder. Also operates in DJ Basin, Gulf of Mexico, Oman, UAE Al Hosn gas, and Algeria. Known for enhanced oil recovery expertise and Carbon Engineering direct air capture investment.', mbpd:'~1.2 Mbpd BOE' },
+    { lat:29.5, lng:-95.4, name:'Devon Energy', country:'United States', detail:'Major US shale independent. Dominant in Delaware Basin (Permian), Eagle Ford, Anadarko Basin (Oklahoma), Powder River Basin (Wyoming), and Williston Basin (Bakken). Known for variable dividend model and capital discipline.', mbpd:'~0.7 Mbpd BOE' },
+    { lat:31.8, lng:-102.3, name:'Diamondback Energy', country:'United States', detail:'Permian Basin pure-play independent. Operates exclusively in Midland and Delaware sub-basins. One of the lowest-cost Permian operators. Rapid growth through acquisitions. Acquired Endeavor Energy Resources in 2024 making it the third largest Permian producer.', mbpd:'~0.46 Mbpd BOE' },
+    { lat:29.4, lng:-98.5, name:'Coterra Energy', country:'United States', detail:'US independent formed from Cabot Oil and Gas and Cimarex merger. Major positions in Permian Basin (Wolfcamp/Bone Spring), Marcellus Shale (Pennsylvania), and Anadarko Basin. Balanced oil and gas portfolio.', mbpd:'~0.65 Mbpd BOE' },
+    { lat:29.5, lng:-95.2, name:'APA Corporation', country:'United States', detail:'US independent (formerly Apache Corporation). Key assets: Permian Basin, North Sea (Forties pipeline system operator), Egypt Western Desert, and Suriname Block 58 (major deepwater discovery with TotalEnergies). Suriname could be a transformational asset.', mbpd:'~0.4 Mbpd BOE' },
+    { lat:39.7, lng:-104.9, name:'Civitas Resources', country:'United States', detail:'Colorado-based independent operating in DJ Basin (Wattenberg Field, world-class tight oil). Expanded into Permian Basin in 2023 through major acquisitions. One of the fastest growing US independents by production.', mbpd:'~0.35 Mbpd BOE' },
+
+    // CANADIAN INDEPENDENTS
+    { lat:56.7, lng:-111.4, name:'Canadian Natural Resources (CNQ)', country:'Canada', detail:'Canada\'s largest independent oil producer. Operates Athabasca oil sands at Horizon and Albian Sands, Pelican Lake thermal operations, and North Sea assets. Known for free cash flow generation with low decline rates.', mbpd:'~1.4 Mbpd BOE' },
+    { lat:51.0, lng:-114.0, name:'Suncor Energy', country:'Canada', detail:'Integrated Canadian oil sands giant. Operates Fort Hills, Syncrude (majority owner), and Base Plant oil sands mines. Also has offshore Newfoundland Hibernia and Terra Nova assets. Upgraders convert bitumen to synthetic crude oil.', mbpd:'~0.77 Mbpd BOE' },
+    { lat:51.1, lng:-113.9, name:'Cenovus Energy', country:'Canada', detail:'Major Canadian integrated producer. Owns 100% of Christina Lake and Foster Creek SAGD thermal in-situ operations. Also operates US refineries in Toledo, Lima, and Superior. Acquired Husky Energy in 2021.', mbpd:'~0.8 Mbpd BOE' },
+
+    // EUROPEAN INDEPENDENTS
+    { lat:57.1, lng:-2.1, name:'Harbour Energy', country:'United Kingdom', detail:'UK\'s largest listed independent E&P company after acquiring Wintershall Dea assets in 2024, becoming a super-independent with assets in North Sea, Norway, Germany, Mexico, Vietnam, and Indonesia. North Sea Tolmount and Zennor fields are key UK assets.', mbpd:'~0.5 Mbpd BOE' },
+    { lat:57.0, lng:-2.3, name:'Ithaca Energy', country:'United Kingdom', detail:'UK North Sea independent that acquired Eni\'s North Sea assets in 2024. Operates Captain, Stella, and Elgin-Franklin fields. Listed on London Stock Exchange. Growing North Sea portfolio.', mbpd:'~0.1 Mbpd BOE' },
+    { lat:55.6, lng:37.5, name:'Lukoil', country:'Russia', detail:'Russia\'s second largest oil company and largest private oil producer. Key fields: West Qurna-2 (Iraq), Caspian Filanovsky, and Timan-Pechora basin. International upstream in Iraq, Mexico, Uzbekistan, and West Africa.', mbpd:'~1.5 Mbpd production' },
+    { lat:55.8, lng:37.7, name:'Gazprom Neft', country:'Russia', detail:'Oil subsidiary of Gazprom. Produces from Prirazlomnoye (Russia\'s first Arctic offshore), Novy Port, and Messoyakha fields. Also international upstream in Iraq Badra field, Libya, and Venezuela.', mbpd:'~0.7 Mbpd production' },
+
+    // ASIA PACIFIC INDEPENDENTS
+    { lat:-31.9, lng:115.9, name:'Woodside Energy', country:'Australia', detail:'Australia\'s largest independent oil and gas company. Flagship assets: North West Shelf LNG and Pluto LNG. Merged with BHP Petroleum in 2022. Operates Sangomar oil field in Senegal which achieved first oil in 2024 — a landmark West Africa development.', mbpd:'~0.55 Mbpd BOE' },
+    { lat:-31.8, lng:115.8, name:'Santos Ltd', country:'Australia', detail:'Major Australian independent with LNG assets at Darwin LNG, PNG LNG stake, and Barossa gas development in Northern Australia. Also PNG, East Timor, and Cooper Basin conventional oil and gas assets.', mbpd:'~0.3 Mbpd BOE' },
+
+    // LATIN AMERICA INDEPENDENTS
+    { lat:-34.7, lng:-58.5, name:'YPF', country:'Argentina', detail:'Argentina\'s national oil company (51% state owned). Flagship operator of Vaca Muerta shale formation — world\'s second largest shale gas and fourth largest shale oil reserve. Rapidly expanding with IOC partnerships including Shell, TotalEnergies, and Chevron.', mbpd:'~0.25 Mbpd production' },
+    { lat:6.0, lng:-58.2, name:'Hess Corporation (Stabroek)', country:'Guyana', detail:'Major US independent holding 30% stake in Guyana Stabroek Block alongside ExxonMobil 45% and CNOOC 25%. Guyana Liza Phase 1 and 2 plus Payara FPSOs producing ~900,000 bpd combined. Acquired by Chevron in 2024 for $53 billion — deal completed after arbitration.', mbpd:'30% Stabroek stake' },
+    { lat:4.0, lng:-53.0, name:'TotalEnergies (Suriname)', country:'Suriname', detail:'TotalEnergies and APA Corporation made major deepwater discoveries on Block 58 offshore Suriname. Krabdagu and Sapakara finds hold multi-billion barrel potential. FID expected mid-2020s. Could establish Suriname as a significant Atlantic Basin producer alongside Guyana.', mbpd:'Pre-FID development' },
+
+    // AFRICA & MIDDLE EAST INDEPENDENTS
+    { lat:31.5, lng:34.4, name:'Energean', country:'Israel / Greece', detail:'London-listed independent focused on Eastern Mediterranean. Flagship: Karish gas field offshore Israel producing since 2022. Also operates in Greece, Egypt, Italy, and North Sea. Acquired Edison E&P assets to expand European footprint.', mbpd:'~0.17 Mbpd BOE' },
+    { lat:5.4, lng:-4.0, name:'Tullow Oil', country:'Ghana', detail:'Africa-focused independent operating Jubilee and TEN fields offshore Ghana in partnership with Kosmos Energy. Previously had Kenya Turkana Basin assets sold in 2024. Jubilee field remains one of West Africa\'s most significant independent-operated assets.', mbpd:'~0.06 Mbpd production' },
+    { lat:5.6, lng:-0.4, name:'Kosmos Energy', country:'Ghana / Mauritania / Senegal', detail:'US-listed African-focused independent. Partner in Ghana Jubilee and TEN fields. Key asset: Greater Tortue Ahmeyim LNG project operated by BP at Senegal/Mauritania border, which began commercial LNG production in June 2025. Also has Namibia and South Africa deepwater exploration blocks.', mbpd:'~0.07 Mbpd BOE' },
+    { lat:-8.9, lng:13.4, name:'Azule Energy', country:'Angola', detail:'50-50 joint venture between Eni and BP formed in 2022, combining all their Angolan upstream assets into one entity. Now Angola\'s largest independent equity producer with 2 billion barrels equivalent net resources and producing ~250,000 bpd. Also holds 42.5% in Namibia Orange Basin Block 2914A.', mbpd:'~0.25 Mbpd BOE' },
+    { lat:-22.2, lng:14.4, name:'TotalEnergies / Shell (Namibia)', country:'Namibia', detail:'Orange Basin offshore Namibia has emerged as a world-class frontier discovery. TotalEnergies operates Venus block estimated at ~3 billion barrels. Shell operates Graff and La Rona blocks. Galp operated Mopane field made additional discovery in 2024. FID for Venus expected 2026 with first oil 2029-2030.', mbpd:'Pre-FID — 200,000+ bpd potential' },
+    { lat:-15.1, lng:40.6, name:'Eni / ExxonMobil (Mozambique LNG)', country:'Mozambique', detail:'Eni operates Coral South FLNG producing since 2022 at 3.5 MTPA. Coral North under construction. ExxonMobil leads Rovuma LNG development — force majeure lifted with FID potentially 2026. TotalEnergies Mozambique LNG remains delayed due to security concerns in Cabo Delgado province.', mbpd:'LNG: 120+ cargoes exported' },
+    { lat:17.4, lng:-16.1, name:'BP / Kosmos (GTA LNG)', country:'Mauritania / Senegal', detail:'Greater Tortue Ahmeyim LNG project operated by BP with Kosmos Energy, PETROSEN (Senegal) and SMH (Mauritania). Began commercial LNG production June 2025. Phase 1 capacity: 2.4 MTPA from deepwater gas straddling the Senegal-Mauritania maritime border. A landmark West Africa gas development.', mbpd:'LNG: 2.4 MTPA Phase 1' },
+    { lat:5.3, lng:-4.2, name:'Aker Energy', country:'Ghana / Norway', detail:'Norwegian independent with stake in Ghana\'s Deepwater Tano Cape Three Points block. Backed by Kjell Inge Rokke\'s Aker Group. Partner alongside TotalEnergies on Pecan field development — one of Ghana\'s next major deepwater oil developments targeting first oil in the late 2020s.', mbpd:'Development phase' }
   ];
 
   producers.forEach(function(p){
@@ -769,5 +837,174 @@
     }
   };
 
+  // ══════════════════════════════════════════
+  // LIVE AIS TANKER TRACKING
+  // ══════════════════════════════════════════
+  var AIS_KEY = 'c559a815fe39aa2071377fb1bc6065673af49ec7';
+  var tankerLayer = L.layerGroup().addTo(map);
+  var tankerMarkers = {};
+  var aisSocket = null;
+  var tankerFeedActive = false;
+  var tankerCount = 0;
+
+  function setStatus(msg, count){
+    var bar = document.getElementById('ais-status');
+    var txt = document.getElementById('ais-status-text');
+    var cnt = document.getElementById('ais-count');
+    if(bar) bar.style.display = msg ? 'block' : 'none';
+    if(txt) txt.textContent = msg || '';
+    if(cnt) cnt.textContent = count !== undefined ? count + ' tankers tracked' : '';
+  }
+
+  function tankerIcon(heading){
+    var rot = (heading && heading >= 0 && heading <= 360) ? heading : 0;
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="20" viewBox="0 0 14 20">'
+      + '<polygon points="7,0 13,18 7,14 1,18" fill="#00e5ff" stroke="#001a26" stroke-width="1" opacity="0.95"/>'
+      + '</svg>';
+    return L.divIcon({
+      className: '',
+      html: '<div style="transform:rotate('+rot+'deg);width:14px;height:20px;filter:drop-shadow(0 0 5px #00e5ff88);">'+svg+'</div>',
+      iconSize: [14, 20],
+      iconAnchor: [7, 10]
+    });
+  }
+
+  function startTankerFeed(){
+    if(aisSocket) return;
+    tankerCount = 0;
+    setStatus('Connecting to AIS stream...');
+
+    try {
+      aisSocket = new WebSocket('wss://stream.aisstream.io/v0/stream');
+    } catch(e){
+      setStatus('WebSocket not supported in this browser.');
+      return;
+    }
+
+    aisSocket.onopen = function(){
+      // No ship type filter — receive ALL vessels, we filter tankers client-side
+      // This avoids the issue of some tankers not having their type set correctly
+      var sub = {
+        APIKey: AIS_KEY,
+        BoundingBoxes: [[[-90, -180], [90, 180]]],
+        FilterMessageTypes: ['PositionReport']
+      };
+      aisSocket.send(JSON.stringify(sub));
+      setStatus('Connected — receiving live AIS data...', 0);
+    };
+
+    aisSocket.onmessage = function(evt){
+      try {
+        var msg = JSON.parse(evt.data);
+
+        // Accept both PositionReport and ShipStaticData message types
+        if(!msg.Message) return;
+        var pos = msg.Message.PositionReport;
+        if(!pos) return;
+
+        var meta = msg.MetaData || {};
+        var mmsi = String(meta.MMSI || pos.UserID || '');
+        if(!mmsi) return;
+
+        var lat = parseFloat(pos.Latitude);
+        var lng = parseFloat(pos.Longitude);
+        if(isNaN(lat) || isNaN(lng)) return;
+        if(lat === 0 && lng === 0) return;
+        if(lat < -90 || lat > 90 || lng < -180 || lng > 180) return;
+
+        // Filter to tanker ship types 80-89 via ShipType in metadata
+        var shipType = parseInt(meta.ShipType || 0);
+        // If ShipType is present and NOT a tanker (80-89), skip
+        // If ShipType is 0 or missing, allow through (unknown type)
+        if(shipType > 0 && (shipType < 80 || shipType > 89)) return;
+
+        var name    = (meta.ShipName || 'Unknown Tanker').trim();
+        var dest    = (meta.Destination || 'Not reported').trim();
+        var speed   = pos.SpeedOverGround !== undefined ? (pos.SpeedOverGround / 10).toFixed(1) + ' kn' : 'N/A';
+        var heading = pos.TrueHeading !== undefined && pos.TrueHeading < 360
+                      ? pos.TrueHeading
+                      : (pos.CourseOverGround || 0);
+        var navStatus = pos.NavigationalStatus;
+        var statusMap = {
+          0:'Under way (engine)', 1:'At anchor', 2:'Not under command',
+          3:'Restricted manoeuvrability', 4:'Constrained by draught',
+          5:'Moored', 6:'Aground', 7:'Engaged in fishing', 8:'Under way (sailing)'
+        };
+        var statusStr = statusMap[navStatus] !== undefined ? statusMap[navStatus] : 'Unknown';
+
+        var popupHtml = '<div style="font-family:Verdana,sans-serif;">'
+          + '<div style="background:#00e5ff;padding:8px 14px;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#003344;margin:-1px -1px 12px;">Live AIS — Tanker</div>'
+          + '<div style="padding:0 14px 14px;">'
+          + '<strong style="font-family:Georgia,serif;font-size:16px;color:#ffffff;display:block;margin-bottom:4px;">'+name+'</strong>'
+          + '<span style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#00e5ff;">MMSI: '+mmsi+'</span>'
+          + '<p style="font-size:11px;line-height:1.75;color:#8a9ab8;margin-top:10px;">'
+          + '<b style="color:#c9a84c;">Destination:</b> '+dest+'<br>'
+          + '<b style="color:#c9a84c;">Speed:</b> '+speed+'<br>'
+          + '<b style="color:#c9a84c;">Heading:</b> '+heading+'°<br>'
+          + '<b style="color:#c9a84c;">Status:</b> '+statusStr
+          + '</p></div></div>';
+
+        if(tankerMarkers[mmsi]){
+          tankerMarkers[mmsi].setLatLng([lat, lng]);
+          tankerMarkers[mmsi].setIcon(tankerIcon(heading));
+          tankerMarkers[mmsi].getPopup().setContent(popupHtml);
+        } else {
+          var m = L.marker([lat, lng], {icon: tankerIcon(heading)})
+            .bindPopup(popupHtml, {className:'oil-popup', maxWidth:300});
+          m.addTo(tankerLayer);
+          tankerMarkers[mmsi] = m;
+          tankerCount++;
+          if(tankerCount % 5 === 0){
+            setStatus('Live AIS stream active', tankerCount);
+          }
+        }
+      } catch(e){ /* silently ignore bad messages */ }
+    };
+
+    aisSocket.onerror = function(e){
+      setStatus('AIS connection error — check browser console for details.');
+      console.error('AIS WebSocket error:', e);
+    };
+
+    aisSocket.onclose = function(e){
+      aisSocket = null;
+      if(tankerFeedActive){
+        setStatus('AIS stream disconnected (code: '+e.code+'). Toggle off and on to reconnect.');
+      }
+      console.log('AIS stream closed, code:', e.code, e.reason);
+    };
+  }
+
+  function stopTankerFeed(){
+    if(aisSocket){
+      aisSocket.close();
+      aisSocket = null;
+    }
+    tankerLayer.clearLayers();
+    tankerMarkers = {};
+    tankerCount = 0;
+    setStatus(null);
+  }
+
+  window.toggleTankerFeed = function(btn){
+    if(tankerFeedActive){
+      stopTankerFeed();
+      tankerFeedActive = false;
+      btn.classList.remove('on');
+    } else {
+      startTankerFeed();
+      tankerFeedActive = true;
+      btn.classList.add('on');
+    }
+  };
+
+})();
+  }
+  if(window.L){ initMap(); } else {
+    var lJs=document.createElement('script');
+    lJs.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+    lJs.onload=function(){ initMap(); };
+    document.head.appendChild(lJs);
+  }
 })();
 </script>
