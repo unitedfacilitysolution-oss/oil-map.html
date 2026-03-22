@@ -1,0 +1,1010 @@
+
+<style>
+  #ufs-market-page * { box-sizing: border-box; margin: 0; padding: 0; }
+  #ufs-market-page {
+    width: 100%;
+    font-family: Georgia, serif;
+    background: #060e16;
+    overflow: hidden;
+  }
+
+  /* GOLD BAR */
+  #ufs-market-page .gold-bar {
+    height: 4px;
+    background: linear-gradient(90deg, #c9a84c, #e8c97a, #c9a84c);
+  }
+
+  /* HEADER */
+  #ufs-market-page .map-header {
+    background: #0a141e;
+    padding: 48px 48px 40px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    align-items: flex-end;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(201,168,76,0.15);
+  }
+
+  #ufs-market-page .header-left {}
+
+  #ufs-market-page .hdr-eyebrow {
+    font-family: Verdana, sans-serif;
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #c9a84c;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  #ufs-market-page .hdr-title {
+    font-family: Georgia, serif;
+    font-size: 36px;
+    font-weight: 400;
+    color: #ffffff;
+    line-height: 1.1;
+  }
+  #ufs-market-page .hdr-title em { color: #c9a84c; font-style: italic; }
+
+  #ufs-market-page .hdr-sub {
+    font-family: Verdana, sans-serif;
+    font-size: 12px;
+    color: #7a8ba8;
+    line-height: 1.75;
+    max-width: 420px;
+    margin-top: 10px;
+  }
+
+  /* CONTROLS */
+  #ufs-market-page .map-controls {
+    background: #0d1b2a;
+    padding: 16px 48px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    border-bottom: 1px solid rgba(201,168,76,0.1);
+  }
+
+  #ufs-market-page .ctrl-label {
+    font-family: Verdana, sans-serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #c9a84c;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+
+  #ufs-market-page .ctrl-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: Verdana, sans-serif;
+    font-size: 10px;
+    padding: 7px 14px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.04);
+    color: #a0aabe;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  #ufs-market-page .ctrl-btn.on {
+    border-color: var(--c);
+    background: var(--c);
+    color: #fff;
+  }
+  #ufs-market-page .ctrl-btn.on.dark-text { color: #0a141e; }
+  #ufs-market-page .ctrl-btn:hover { border-color: #c9a84c; color: #c9a84c; }
+  #ufs-market-page .ctrl-btn.on:hover { color: inherit; }
+
+  #ufs-market-page .ctrl-dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  #ufs-market-page .ctrl-divider {
+    width: 1px; height: 24px;
+    background: rgba(255,255,255,0.08);
+    flex-shrink: 0;
+    margin: 0 4px;
+  }
+
+  #ufs-market-page .reset-btn {
+    font-family: Verdana, sans-serif;
+    font-size: 10px;
+    padding: 7px 14px;
+    border: 1px solid rgba(201,168,76,0.3);
+    background: transparent;
+    color: #c9a84c;
+    cursor: pointer;
+    margin-left: auto;
+  }
+  #ufs-market-page .reset-btn:hover { background: #c9a84c; color: #0a141e; }
+
+  /* MAP WRAP */
+  #ufs-market-page .map-wrap {
+    position: relative;
+    width: 100%;
+    height: 680px;
+    background: #0a141e;
+  }
+
+  #ufs-market-page #globe-map {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* STATS BAND */
+  #ufs-market-page .stats-band {
+    background: #0a141e;
+    display: flex;
+    flex-wrap: wrap;
+    border-top: 1px solid rgba(201,168,76,0.12);
+  }
+
+  #ufs-market-page .stat-item {
+    flex: 1;
+    min-width: 130px;
+    padding: 24px 20px;
+    text-align: center;
+    border-right: 1px solid rgba(201,168,76,0.08);
+  }
+  #ufs-market-page .stat-item:last-child { border-right: none; }
+
+  #ufs-market-page .stat-num {
+    display: block;
+    font-family: Georgia, serif;
+    font-size: 28px;
+    color: #c9a84c;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  #ufs-market-page .stat-lbl {
+    display: block;
+    font-family: Verdana, sans-serif;
+    font-size: 8px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #5a6a7a;
+    line-height: 1.5;
+  }
+
+  /* LEGEND */
+  #ufs-market-page .legend-band {
+    background: #0d1b2a;
+    padding: 24px 48px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    align-items: center;
+    border-top: 1px solid rgba(201,168,76,0.1);
+    border-bottom: 1px solid rgba(201,168,76,0.1);
+  }
+
+  #ufs-market-page .leg-title {
+    font-family: Verdana, sans-serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #c9a84c;
+    flex-shrink: 0;
+  }
+
+  #ufs-market-page .leg-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+  }
+
+  #ufs-market-page .leg-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: Verdana, sans-serif;
+    font-size: 10px;
+    color: #7a8ba8;
+  }
+
+  #ufs-market-page .leg-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  #ufs-market-page .leg-line {
+    width: 24px; height: 2px;
+    flex-shrink: 0;
+  }
+
+  /* REGIONAL SECTION */
+  #ufs-market-page .regional {
+    background: #060e16;
+    padding: 64px 48px;
+  }
+
+  #ufs-market-page .regional-hdr {
+    margin-bottom: 40px;
+  }
+
+  #ufs-market-page .sec-eyebrow {
+    font-family: Verdana, sans-serif;
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #c9a84c;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  #ufs-market-page .sec-h2 {
+    font-family: Georgia, serif;
+    font-size: 32px;
+    font-weight: 400;
+    color: #ffffff;
+  }
+
+  #ufs-market-page .regional-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    background: rgba(255,255,255,0.04);
+  }
+
+  #ufs-market-page .reg-card {
+    flex: 1;
+    min-width: 220px;
+    background: #0a141e;
+    padding: 32px 26px;
+    border-top: 2px solid #c9a84c;
+  }
+
+  #ufs-market-page .reg-name {
+    display: block;
+    font-family: Verdana, sans-serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #c9a84c;
+    margin-bottom: 10px;
+  }
+
+  #ufs-market-page .reg-title {
+    display: block;
+    font-family: Georgia, serif;
+    font-size: 18px;
+    color: #ffffff;
+    margin-bottom: 10px;
+    line-height: 1.2;
+  }
+
+  #ufs-market-page .reg-text {
+    font-family: Verdana, sans-serif;
+    font-size: 11px;
+    line-height: 1.85;
+    color: #7a8ba8;
+  }
+
+  /* FOOTER */
+  #ufs-market-page .footer {
+    background: #04080f;
+    padding: 30px 48px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid rgba(201,168,76,0.12);
+  }
+
+  #ufs-market-page .footer-brand {
+    font-family: Georgia, serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #f4f1ec;
+  }
+  #ufs-market-page .footer-brand span { color: #c9a84c; }
+
+  #ufs-market-page .footer-copy {
+    font-family: Verdana, sans-serif;
+    font-size: 10px;
+    color: #2a3548;
+  }
+
+  /* Leaflet popup custom */
+  .oil-popup .leaflet-popup-content-wrapper {
+    background: #0d1b2a;
+    border: 1px solid rgba(201,168,76,0.25);
+    border-radius: 0;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    padding: 0;
+  }
+  .oil-popup .leaflet-popup-tip { background: #0d1b2a; }
+  .oil-popup .leaflet-popup-content { margin: 0; min-width: 240px; max-width: 300px; }
+</style>
+
+<div id="ufs-market-page">
+
+  <div class="gold-bar"></div>
+
+  <!-- HEADER -->
+  <div class="map-header">
+    <div class="header-left">
+      <span class="hdr-eyebrow">Global Oil Infrastructure Intelligence</span>
+      <p class="hdr-title">World Crude Oil <em>Market Map</em></p>
+      <p class="hdr-sub">Interactive globe showing crude oil producers, refineries, government controlling entities, export terminals, and primary tanker shipping routes worldwide. Click any marker for detail.</p>
+    </div>
+  </div>
+
+  <!-- LAYER CONTROLS -->
+  <div class="map-controls">
+    <span class="ctrl-label">Layers:</span>
+    <button class="ctrl-btn on dark-text" id="btn-producers" style="--c:#e8a020" onclick="toggleLayer('producers',this)">
+      <span class="ctrl-dot" style="background:#e8a020"></span> Producers
+    </button>
+    <button class="ctrl-btn on" id="btn-refineries" style="--c:#3a8fc1" onclick="toggleLayer('refineries',this)">
+      <span class="ctrl-dot" style="background:#3a8fc1"></span> Refineries
+    </button>
+    <button class="ctrl-btn on" id="btn-govt" style="--c:#c94c9a" onclick="toggleLayer('govt',this)">
+      <span class="ctrl-dot" style="background:#c94c9a"></span> Govt Entities / NOCs
+    </button>
+    <button class="ctrl-btn on" id="btn-terminals" style="--c:#5aaa6a" onclick="toggleLayer('terminals',this)">
+      <span class="ctrl-dot" style="background:#5aaa6a"></span> Export Terminals
+    </button>
+    <button class="ctrl-btn on dark-text" id="btn-routes" style="--c:#c9a84c" onclick="toggleLayer('routes',this)">
+      <span class="ctrl-dot" style="background:#c9a84c"></span> Tanker Routes
+    </button>
+    <div class="ctrl-divider"></div>
+    <button class="ctrl-btn" id="btn-tankers" style="--c:#00e5ff" onclick="toggleTankerFeed(this)">
+      <span class="ctrl-dot" style="background:#00e5ff"></span> Live Tankers
+    </button>
+    <div class="ctrl-divider"></div>
+    <button class="reset-btn" onclick="resetView()">Reset View</button>
+  </div>
+
+  <!-- AIS STATUS BAR -->
+  <div id="ais-status" style="display:none;background:#031a26;padding:8px 48px;font-family:Verdana,sans-serif;font-size:10px;color:#00e5ff;border-bottom:1px solid rgba(0,229,255,0.15);">
+    <span id="ais-status-text">Connecting to AIS stream...</span>
+    <span id="ais-count" style="margin-left:16px;color:#c9a84c;"></span>
+  </div>
+
+  <!-- MAP -->
+  <div class="map-wrap">
+    <div id="globe-map"></div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-band">
+    <div class="stat-item">
+      <span class="stat-num">100M+</span>
+      <span class="stat-lbl">Barrels / day<br>produced globally</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">50M+</span>
+      <span class="stat-lbl">Barrels / day<br>internationally traded</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">700+</span>
+      <span class="stat-lbl">Active refineries<br>worldwide</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">40+</span>
+      <span class="stat-lbl">Major producing<br>nations</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">5,000+</span>
+      <span class="stat-lbl">Active tankers<br>in global fleet</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">80%+</span>
+      <span class="stat-lbl">Reserves controlled<br>by NOCs</span>
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend-band">
+    <span class="leg-title">Legend</span>
+    <div class="leg-items">
+      <div class="leg-item"><div class="leg-dot" style="background:#e8a020"></div> Crude Oil Producers</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#3a8fc1"></div> Refineries</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#c94c9a"></div> Govt Entities / NOCs</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#5aaa6a"></div> Export Terminals</div>
+      <div class="leg-item"><div class="leg-line" style="background:#c9a84c;border-top:2px dashed #c9a84c;height:0"></div> Tanker Routes</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#00e5ff;box-shadow:0 0 6px #00e5ff"></div> Live Tankers (AIS)</div>
+    </div>
+  </div>
+
+  <!-- REGIONAL OVERVIEW -->
+  <div class="regional">
+    <div class="regional-hdr">
+      <span class="sec-eyebrow">Regional Intelligence</span>
+      <p class="sec-h2">Key Producing and Refining Regions</p>
+    </div>
+    <div class="regional-grid">
+
+      <div class="reg-card">
+        <span class="reg-name">Middle East</span>
+        <span class="reg-title">The World's Largest Export Region</span>
+        <p class="reg-text">Saudi Aramco, ADNOC, KPC, INOC, and QatarEnergy collectively control the majority of global proven reserves. The Persian Gulf handles over 20 Mbpd of crude exports — approximately 40% of global seaborne crude trade.</p>
+      </div>
+
+      <div class="reg-card">
+        <span class="reg-name">West Africa</span>
+        <span class="reg-title">Premium Light Sweet Crude</span>
+        <p class="reg-text">NNPC (Nigeria), Sonangol (Angola), and GNPC (Ghana) control the region's production. Bonny Light and Girassol grades are among the most sought-after globally. A primary UFS operational region.</p>
+      </div>
+
+      <div class="reg-card">
+        <span class="reg-name">Americas</span>
+        <span class="reg-title">Fastest Growing Export Region</span>
+        <p class="reg-text">The United States, Brazil (Petrobras), and Guyana (ExxonMobil-led) are rapidly expanding export capacity. WTI and Brazilian pre-salt grades are in high demand from Asian and European refiners.</p>
+      </div>
+
+      <div class="reg-card">
+        <span class="reg-name">Asia Pacific</span>
+        <span class="reg-title">World's Largest Import Region</span>
+        <p class="reg-text">SINOPEC, PetroChina, Indian Oil, and Japanese refiners collectively represent the world's largest crude import market. Over 60% of Middle East and African crude flows to this region.</p>
+      </div>
+
+      <div class="reg-card">
+        <span class="reg-name">Russia / CIS</span>
+        <span class="reg-title">Sanctions-Affected Major Producer</span>
+        <p class="reg-text">Rosneft and Gazprom Neft control Russia's vast reserves. Urals crude rerouted from Europe to Asia since 2022. Kazakhstan's KazMunayGas exports Tengiz and Kashagan blend via CPC pipeline.</p>
+      </div>
+
+      <div class="reg-card">
+        <span class="reg-name">North Africa</span>
+        <span class="reg-title">Mediterranean Gateway</span>
+        <p class="reg-text">NOC Libya, Sonatrach Algeria, and EGPC Egypt control significant reserves with direct pipeline and tanker access to European Mediterranean refineries. Light sweet crude grades command premium pricing.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-brand">United <span>Facility</span> Solution</div>
+    <div class="footer-copy">2024 United Facility Solution. All rights reserved. Map data representative of global oil trade infrastructure.</div>
+  </div>
+
+  <div class="gold-bar"></div>
+
+</div>
+
+<script>
+(function(){
+  if(!document.getElementById('leaflet-css-ufs')){
+    var lCss=document.createElement('link');
+    lCss.id='leaflet-css-ufs';
+    lCss.rel='stylesheet';
+    lCss.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+    document.head.appendChild(lCss);
+  }
+  function initMap(){
+(function(){
+
+  var DEFAULT_CENTER = [20, 15];
+  var DEFAULT_ZOOM = 2;
+
+  var map = L.map('globe-map', {
+    center: DEFAULT_CENTER,
+    zoom: DEFAULT_ZOOM,
+    minZoom: 2,
+    maxZoom: 10,
+    worldCopyJump: true,
+    zoomControl: true
+  });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+
+  window.resetView = function(){ map.setView(DEFAULT_CENTER, DEFAULT_ZOOM); };
+
+  // ── ICON FACTORY ──
+  function icon(color, size, shape){
+    size = size || 13;
+    var inner = shape === 'diamond'
+      ? '<div style="width:'+(size*0.8)+'px;height:'+(size*0.8)+'px;background:'+color+';transform:rotate(45deg);border:1.5px solid rgba(255,255,255,0.5);box-shadow:0 0 8px '+color+'99;"></div>'
+      : shape === 'square'
+      ? '<div style="width:'+size+'px;height:'+size+'px;background:'+color+';border:1.5px solid rgba(255,255,255,0.5);box-shadow:0 0 8px '+color+'99;"></div>'
+      : '<div style="width:'+size+'px;height:'+size+'px;background:'+color+';border-radius:50%;border:2px solid rgba(255,255,255,0.45);box-shadow:0 0 8px '+color+'99;"></div>';
+    return L.divIcon({ className:'', html:inner, iconSize:[size,size], iconAnchor:[size/2,size/2] });
+  }
+
+  // ── POPUP FACTORY ──
+  function popup(color, category, name, country, detail, mbpd){
+    var extra = mbpd ? '<div style="margin-top:10px;padding:8px 12px;background:rgba(201,168,76,0.08);border-left:2px solid #c9a84c;font-family:Verdana,sans-serif;font-size:10px;color:#c9a84c;">'+mbpd+'</div>' : '';
+    return '<div style="font-family:Verdana,sans-serif;">'
+      +'<div style="background:'+color+';padding:8px 14px;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:'+(color==='#c9a84c'||color==='#e8a020'?'#0a141e':'#fff')+';margin:-1px -1px 12px;">'+category+'</div>'
+      +'<div style="padding:0 14px 14px;">'
+      +'<strong style="font-family:Georgia,serif;font-size:16px;color:#ffffff;display:block;margin-bottom:4px;">'+name+'</strong>'
+      +'<span style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#c9a84c;">'+country+'</span>'
+      +'<p style="font-size:11px;line-height:1.75;color:#8a9ab8;margin-top:10px;">'+detail+'</p>'
+      +extra
+      +'</div></div>';
+  }
+
+  // ══════════════════════════════════════════
+  // LAYER GROUPS
+  // ══════════════════════════════════════════
+  var layers = {
+    producers: L.layerGroup(),
+    refineries: L.layerGroup(),
+    govt: L.layerGroup(),
+    terminals: L.layerGroup(),
+    routes: L.layerGroup()
+  };
+
+  // ══════════════════════════════════════════
+  // 1. CRUDE OIL PRODUCERS (orange)
+  // ══════════════════════════════════════════
+  var producers = [
+    // MIDDLE EAST
+    { lat:24.7, lng:46.7, name:'Saudi Arabia', country:'Kingdom of Saudi Arabia', detail:'World\'s largest crude exporter with ~12 Mbpd capacity. Key grades: Arab Light, Arab Extra Light, Arab Heavy. Exports to Asia, Europe, and USA.', mbpd:'~12.0 Mbpd capacity' },
+    { lat:33.3, lng:44.4, name:'Iraq', country:'Republic of Iraq', detail:'OPEC\'s second largest producer. Basra Light and Basra Heavy grades exported from southern terminals. Northern Kirkuk crude via Turkey.', mbpd:'~4.5 Mbpd production' },
+    { lat:24.5, lng:54.4, name:'UAE', country:'United Arab Emirates', detail:'ADNOC is the national operator. Murban crude is primary export grade. Das Island and Fujairah are key export points.', mbpd:'~3.0 Mbpd production' },
+    { lat:29.3, lng:47.7, name:'Kuwait', country:'State of Kuwait', detail:'Kuwait Petroleum Corporation controls all production. Kuwait Export Crude (KEC) is primary grade. Single export terminal at Mina Al-Ahmadi.', mbpd:'~2.7 Mbpd capacity' },
+    { lat:25.3, lng:51.2, name:'Qatar', country:'State of Qatar', detail:'QatarEnergy dominates. Primarily LNG exporter but also produces significant condensates and crude. Al-Shaheen is key crude grade.', mbpd:'~1.8 Mbpd liquids' },
+    { lat:32.0, lng:53.7, name:'Iran', country:'Islamic Republic of Iran', detail:'NIOC controls vast reserves — 3rd largest globally. Iranian Light and Heavy grades. Under US and EU sanctions limiting exports.', mbpd:'~3.5 Mbpd (sanctioned)' },
+    { lat:15.6, lng:48.5, name:'Yemen', country:'Republic of Yemen', detail:'Marib Light is primary crude grade. Production severely reduced by ongoing conflict. Masila Basin key producing area.', mbpd:'<0.1 Mbpd (conflict)' },
+    { lat:24.0, lng:56.0, name:'Oman', country:'Sultanate of Oman', detail:'Petroleum Development Oman (PDO) is key operator. Oman crude is benchmark grade for Asian markets. Exports primarily to Asia.', mbpd:'~1.0 Mbpd production' },
+
+    // WEST AFRICA
+    { lat:6.5, lng:3.4, name:'Nigeria', country:'Federal Republic of Nigeria', detail:'Africa\'s largest oil producer. Bonny Light, Forcados, Qua Iboe are premium grades sought globally. NNPC controls national production.', mbpd:'~1.5 Mbpd production' },
+    { lat:-8.8, lng:13.2, name:'Angola', country:'Republic of Angola', detail:'Sub-Saharan Africa\'s second largest producer. Sonangol is national operator. Cabinda, Girassol, and CLOV grades exported primarily to Asia.', mbpd:'~1.1 Mbpd production' },
+    { lat:5.6, lng:-0.2, name:'Ghana', country:'Republic of Ghana', detail:'GNPC is national operator. Jubilee and TEN oil fields produce light sweet crude. Offshore FPSO loading for direct tanker export.', mbpd:'~0.17 Mbpd production' },
+    { lat:3.9, lng:9.7, name:'Cameroon', country:'Republic of Cameroon', detail:'SNH controls national upstream interests. Lokele crude exported from Kribi terminal. Production slowly declining.', mbpd:'~0.07 Mbpd production' },
+    { lat:1.7, lng:9.6, name:'Equatorial Guinea', country:'Republic of Equatorial Guinea', detail:'GEPetrol is national company. Zafiro crude is primary export grade. Offshore production via FPSO vessels.', mbpd:'~0.09 Mbpd production' },
+    { lat:-0.2, lng:9.4, name:'Gabon', country:'Gabonese Republic', detail:'Gabon Oil Company (GOC) manages state interests. Rabi Light crude. Libreville is administrative centre, crude exported from Gamba.', mbpd:'~0.21 Mbpd production' },
+
+    // NORTH AFRICA
+    { lat:27.0, lng:17.0, name:'Libya', country:'State of Libya', detail:'NOC Libya controls all production. Excellent quality low-sulphur Es Sider and Sharara crude. Production volatile due to political instability.', mbpd:'~1.2 Mbpd (variable)' },
+    { lat:28.0, lng:2.0, name:'Algeria', country:'People\'s Democratic Republic of Algeria', detail:'Sonatrach is one of the world\'s largest state oil companies. Saharan Blend is primary crude grade. Pipeline exports to Europe plus LNG.', mbpd:'~1.0 Mbpd production' },
+    { lat:26.8, lng:30.8, name:'Egypt', country:'Arab Republic of Egypt', detail:'EGPC is national operator. Suez blend and Belayim crude grades. Egypt also earns revenues from Suez Canal crude transit fees.', mbpd:'~0.6 Mbpd production' },
+
+    // EAST AFRICA
+    { lat:15.6, lng:32.5, name:'Sudan', country:'Republic of Sudan', detail:'Sudapet manages national interests. Pipeline to Port Sudan on Red Sea for export. Production reduced following South Sudan separation.', mbpd:'~0.07 Mbpd production' },
+    { lat:6.9, lng:31.3, name:'South Sudan', country:'Republic of South Sudan', detail:'Nilepet is national company. Landlocked — crude piped to Port Sudan. Dar Blend and Nile Blend are export grades.', mbpd:'~0.15 Mbpd production' },
+    { lat:-1.3, lng:36.8, name:'Kenya', country:'Republic of Kenya', detail:'NOCK is national company. Ngamia and Amosing fields in Turkana Basin. Pipeline development ongoing for future exports.', mbpd:'Pre-export development' },
+
+    // FSU / RUSSIA
+    { lat:56.0, lng:60.0, name:'Russia (Siberia)', country:'Russian Federation', detail:'Rosneft and Gazprom Neft control vast West Siberian fields. Urals crude is benchmark. ESPO pipeline supplies Asia. Exports rerouted since 2022 sanctions.', mbpd:'~9.5 Mbpd production' },
+    { lat:68.0, lng:33.0, name:'Russia (Arctic)', country:'Russian Federation', detail:'Novy Port and ARCO crude from Arctic fields. Varandey terminal for Nenets crude. Increasingly strategic despite harsh conditions.', mbpd:'Part of 9.5 Mbpd total' },
+    { lat:39.9, lng:50.0, name:'Azerbaijan', country:'Republic of Azerbaijan', detail:'SOCAR is national company. Azeri Light crude is highly prized. BTC pipeline to Ceyhan, Turkey for Mediterranean export.', mbpd:'~0.65 Mbpd production' },
+    { lat:48.0, lng:67.0, name:'Kazakhstan', country:'Republic of Kazakhstan', detail:'KazMunayGas is national company. Tengiz (Chevron-led) and Kashagan (international consortium) are flagship fields. CPC pipeline to Novorossiysk.', mbpd:'~1.7 Mbpd production' },
+    { lat:40.0, lng:53.0, name:'Turkmenistan', country:'Turkmenistan', detail:'Turkmengaz and Turkmennebit control resources. Primarily gas focused but produces significant crude. Export routes limited by geography.', mbpd:'~0.22 Mbpd production' },
+
+    // AMERICAS
+    { lat:30.0, lng:-97.0, name:'Permian Basin (Texas)', country:'United States of America', detail:'World\'s most prolific shale oil region. WTI Midland is the benchmark grade. Major operators: ExxonMobil, Pioneer, Chevron, ConocoPhillips.', mbpd:'~6.0 Mbpd from Permian' },
+    { lat:61.2, lng:-149.9, name:'Alaska', country:'United States of America', detail:'Alaska North Slope crude. Trans-Alaska Pipeline System (TAPS) routes crude to Valdez terminal. ANS is separate benchmark grade.', mbpd:'~0.45 Mbpd production' },
+    { lat:51.5, lng:-114.1, name:'Alberta Oil Sands', country:'Canada', detail:'World\'s largest oil sands deposit. Western Canadian Select (WCS) heavy crude. Syncrude and Cold Lake are other key grades. Primarily exported to USA.', mbpd:'~3.9 Mbpd production' },
+    { lat:-22.9, lng:-43.2, name:'Brazil (Pre-Salt)', country:'Federative Republic of Brazil', detail:'Petrobras operates massive deep-water pre-salt fields in Santos and Campos basins. High quality light crude exported primarily to China and USA.', mbpd:'~3.4 Mbpd production' },
+    { lat:6.1, lng:-58.1, name:'Guyana', country:'Co-operative Republic of Guyana', detail:'Stabroek Block operated by ExxonMobil, Hess, and CNOOC. Rapid production growth underway. Liza crude is primary export grade.', mbpd:'~0.65 Mbpd and growing' },
+    { lat:10.5, lng:-66.9, name:'Venezuela', country:'Bolivarian Republic of Venezuela', detail:'PDVSA controls vast heavy crude reserves in Orinoco Belt. Production severely impacted by economic conditions and sanctions.', mbpd:'~0.8 Mbpd (reduced)' },
+    { lat:-3.7, lng:-73.2, name:'Ecuador', country:'Republic of Ecuador', detail:'Petroecuador is national operator. Oriente and Napo are heavy crude grades. Amazon Basin fields connect via SOTE pipeline to Pacific coast.', mbpd:'~0.47 Mbpd production' },
+    { lat:5.0, lng:-75.5, name:'Colombia', country:'Republic of Colombia', detail:'Ecopetrol is national company. Vasconia and Castilla heavy crude grades. Pipeline network routes to Caribbean and Pacific export terminals.', mbpd:'~0.75 Mbpd production' },
+    { lat:23.0, lng:-102.0, name:'Mexico', country:'United Mexican States', detail:'PEMEX is national company. Maya heavy crude is primary export grade. Offshore Cantarell and Ku-Maloob-Zaap fields are major producers.', mbpd:'~1.6 Mbpd production' },
+
+    // ASIA PACIFIC
+    { lat:3.5, lng:108.0, name:'Malaysia', country:'Malaysia', detail:'PETRONAS is national company. Tapis and Minas sweet crude grades are prized by Asian refiners. Offshore Sarawak and Sabah are key producing areas.', mbpd:'~0.55 Mbpd production' },
+    { lat:0.5, lng:101.4, name:'Indonesia', country:'Republic of Indonesia', detail:'Pertamina is national company. Minas and Duri crude grades. Production declining from peak but Indonesia remains a significant regional player.', mbpd:'~0.61 Mbpd production' },
+    { lat:20.9, lng:107.0, name:'Vietnam', country:'Socialist Republic of Vietnam', detail:'PetroVietnam is national company. Bach Ho (White Tiger) field is major producer. Light sweet crude exported primarily to East Asian refiners.', mbpd:'~0.20 Mbpd production' },
+    { lat:28.0, lng:84.0, name:'India (Offshore)', country:'Republic of India', detail:'ONGC is national company. Mumbai High field is flagship offshore asset. India is a large net importer despite domestic production.', mbpd:'~0.55 Mbpd domestic' },
+    { lat:37.0, lng:75.0, name:'China (Xinjiang)', country:'People\'s Republic of China', detail:'CNPC/PetroChina operates Tarim Basin fields. Daqing in northeast is flagship onshore field. China is world\'s 4th largest producer but much larger importer.', mbpd:'~4.0 Mbpd domestic' },
+
+    // IOC SUPERMAJORS
+    { lat:51.5, lng:-0.1, name:'BP (British Petroleum)', country:'United Kingdom', detail:'Supermajor with upstream assets in 30+ countries. Key producing regions: Gulf of Mexico, North Sea, Azerbaijan ACG field, Angola, Iraq, and Oman. Partner in Greater Tortue Ahmeyim LNG project at Senegal/Mauritania border which began production in 2025.', mbpd:'~2.3 Mbpd BOE' },
+    { lat:52.3, lng:4.9, name:'Shell plc', country:'Netherlands / UK', detail:'Global supermajor with upstream in 70+ countries. Key assets: Prelude FLNG (Australia), Perdido (Gulf of Mexico), Nigeria Bonga deepwater, and North Sea. Merging UK North Sea assets with Equinor creating the basin\'s largest independent producer.', mbpd:'~2.9 Mbpd BOE' },
+    { lat:48.9, lng:2.4, name:'TotalEnergies', country:'France', detail:'French supermajor with major upstream in Africa, Middle East, and North Sea. Key assets: Uganda Tilenga, Angola deepwater, Iraq Al Halfaya, Qatar NFE LNG, and Ivory Coast Baleine field. Plans 3% annual production growth to 2030.', mbpd:'~2.5 Mbpd BOE' },
+    { lat:45.4, lng:9.1, name:'Eni S.p.A.', country:'Italy', detail:'Italian supermajor with the strongest Africa upstream portfolio of any IOC. Key assets: Angola, Ivory Coast Baleine field, Mozambique Coral FLNG, Libya Waha, and Egypt Zohr gas field. Known for fast-tracking projects on time and under budget.', mbpd:'~1.7 Mbpd BOE' },
+    { lat:59.9, lng:10.7, name:'Equinor', country:'Norway', detail:'Norwegian supermajor majority owned by Norwegian state. World\'s largest deepwater operator. Key assets: Johan Sverdrup (Norway, ~700,000 bpd), Angola blocks, Algeria, Brazil Roncador, and US Gulf of Mexico. Merging UK North Sea assets with Shell.', mbpd:'~1.3 Mbpd BOE' },
+    { lat:48.2, lng:16.3, name:'OMV', country:'Austria', detail:'Austrian integrated oil and gas company with upstream in Norway, Romania via Petrom subsidiary, Libya, Tunisia, UAE, and Malaysia. Romania is a large conventional asset base. Focused on growing upstream internationally.', mbpd:'~0.4 Mbpd BOE' },
+    { lat:40.3, lng:-3.6, name:'Repsol', country:'Spain', detail:'Spanish integrated independent with upstream in Libya Waha field, Algeria, Trinidad, Peru, and North Sea. Also a major Spanish refiner. Plans to increase Libyan output through deeper IOC collaboration. ~0.6 Mbpd BOE production.', mbpd:'~0.6 Mbpd BOE' },
+
+    // LARGE US INDEPENDENTS
+    { lat:29.6, lng:-95.3, name:'ConocoPhillips', country:'United States', detail:'World\'s largest independent E&P company. Key assets: Permian Basin, Eagle Ford, Bakken, Alaska North Slope Willow Project, Norway, Australia Barossa LNG, and Malaysia. Acquired Marathon Oil in 2024 for $22.5 billion. Pure upstream focus with no downstream operations.', mbpd:'~1.8 Mbpd BOE' },
+    { lat:29.7, lng:-95.5, name:'EOG Resources', country:'United States', detail:'One of the most efficient US shale producers. Operates primarily in Permian Basin, Eagle Ford (Texas), Bakken (North Dakota), DJ Basin (Colorado), and international assets in Trinidad and Tobago. Known for proprietary drilling technology and low break-even costs.', mbpd:'~1.0 Mbpd BOE' },
+    { lat:29.8, lng:-95.6, name:'Occidental Petroleum', country:'United States', detail:'Major US independent with Permian Basin core assets — largest Permian acreage holder. Also operates in DJ Basin, Gulf of Mexico, Oman, UAE Al Hosn gas, and Algeria. Known for enhanced oil recovery expertise and Carbon Engineering direct air capture investment.', mbpd:'~1.2 Mbpd BOE' },
+    { lat:29.5, lng:-95.4, name:'Devon Energy', country:'United States', detail:'Major US shale independent. Dominant in Delaware Basin (Permian), Eagle Ford, Anadarko Basin (Oklahoma), Powder River Basin (Wyoming), and Williston Basin (Bakken). Known for variable dividend model and capital discipline.', mbpd:'~0.7 Mbpd BOE' },
+    { lat:31.8, lng:-102.3, name:'Diamondback Energy', country:'United States', detail:'Permian Basin pure-play independent. Operates exclusively in Midland and Delaware sub-basins. One of the lowest-cost Permian operators. Rapid growth through acquisitions. Acquired Endeavor Energy Resources in 2024 making it the third largest Permian producer.', mbpd:'~0.46 Mbpd BOE' },
+    { lat:29.4, lng:-98.5, name:'Coterra Energy', country:'United States', detail:'US independent formed from Cabot Oil and Gas and Cimarex merger. Major positions in Permian Basin (Wolfcamp/Bone Spring), Marcellus Shale (Pennsylvania), and Anadarko Basin. Balanced oil and gas portfolio.', mbpd:'~0.65 Mbpd BOE' },
+    { lat:29.5, lng:-95.2, name:'APA Corporation', country:'United States', detail:'US independent (formerly Apache Corporation). Key assets: Permian Basin, North Sea (Forties pipeline system operator), Egypt Western Desert, and Suriname Block 58 (major deepwater discovery with TotalEnergies). Suriname could be a transformational asset.', mbpd:'~0.4 Mbpd BOE' },
+    { lat:39.7, lng:-104.9, name:'Civitas Resources', country:'United States', detail:'Colorado-based independent operating in DJ Basin (Wattenberg Field, world-class tight oil). Expanded into Permian Basin in 2023 through major acquisitions. One of the fastest growing US independents by production.', mbpd:'~0.35 Mbpd BOE' },
+
+    // CANADIAN INDEPENDENTS
+    { lat:56.7, lng:-111.4, name:'Canadian Natural Resources (CNQ)', country:'Canada', detail:'Canada\'s largest independent oil producer. Operates Athabasca oil sands at Horizon and Albian Sands, Pelican Lake thermal operations, and North Sea assets. Known for free cash flow generation with low decline rates.', mbpd:'~1.4 Mbpd BOE' },
+    { lat:51.0, lng:-114.0, name:'Suncor Energy', country:'Canada', detail:'Integrated Canadian oil sands giant. Operates Fort Hills, Syncrude (majority owner), and Base Plant oil sands mines. Also has offshore Newfoundland Hibernia and Terra Nova assets. Upgraders convert bitumen to synthetic crude oil.', mbpd:'~0.77 Mbpd BOE' },
+    { lat:51.1, lng:-113.9, name:'Cenovus Energy', country:'Canada', detail:'Major Canadian integrated producer. Owns 100% of Christina Lake and Foster Creek SAGD thermal in-situ operations. Also operates US refineries in Toledo, Lima, and Superior. Acquired Husky Energy in 2021.', mbpd:'~0.8 Mbpd BOE' },
+
+    // EUROPEAN INDEPENDENTS
+    { lat:57.1, lng:-2.1, name:'Harbour Energy', country:'United Kingdom', detail:'UK\'s largest listed independent E&P company after acquiring Wintershall Dea assets in 2024, becoming a super-independent with assets in North Sea, Norway, Germany, Mexico, Vietnam, and Indonesia. North Sea Tolmount and Zennor fields are key UK assets.', mbpd:'~0.5 Mbpd BOE' },
+    { lat:57.0, lng:-2.3, name:'Ithaca Energy', country:'United Kingdom', detail:'UK North Sea independent that acquired Eni\'s North Sea assets in 2024. Operates Captain, Stella, and Elgin-Franklin fields. Listed on London Stock Exchange. Growing North Sea portfolio.', mbpd:'~0.1 Mbpd BOE' },
+    { lat:55.6, lng:37.5, name:'Lukoil', country:'Russia', detail:'Russia\'s second largest oil company and largest private oil producer. Key fields: West Qurna-2 (Iraq), Caspian Filanovsky, and Timan-Pechora basin. International upstream in Iraq, Mexico, Uzbekistan, and West Africa.', mbpd:'~1.5 Mbpd production' },
+    { lat:55.8, lng:37.7, name:'Gazprom Neft', country:'Russia', detail:'Oil subsidiary of Gazprom. Produces from Prirazlomnoye (Russia\'s first Arctic offshore), Novy Port, and Messoyakha fields. Also international upstream in Iraq Badra field, Libya, and Venezuela.', mbpd:'~0.7 Mbpd production' },
+
+    // ASIA PACIFIC INDEPENDENTS
+    { lat:-31.9, lng:115.9, name:'Woodside Energy', country:'Australia', detail:'Australia\'s largest independent oil and gas company. Flagship assets: North West Shelf LNG and Pluto LNG. Merged with BHP Petroleum in 2022. Operates Sangomar oil field in Senegal which achieved first oil in 2024 — a landmark West Africa development.', mbpd:'~0.55 Mbpd BOE' },
+    { lat:-31.8, lng:115.8, name:'Santos Ltd', country:'Australia', detail:'Major Australian independent with LNG assets at Darwin LNG, PNG LNG stake, and Barossa gas development in Northern Australia. Also PNG, East Timor, and Cooper Basin conventional oil and gas assets.', mbpd:'~0.3 Mbpd BOE' },
+
+    // LATIN AMERICA INDEPENDENTS
+    { lat:-34.7, lng:-58.5, name:'YPF', country:'Argentina', detail:'Argentina\'s national oil company (51% state owned). Flagship operator of Vaca Muerta shale formation — world\'s second largest shale gas and fourth largest shale oil reserve. Rapidly expanding with IOC partnerships including Shell, TotalEnergies, and Chevron.', mbpd:'~0.25 Mbpd production' },
+    { lat:6.0, lng:-58.2, name:'Hess Corporation (Stabroek)', country:'Guyana', detail:'Major US independent holding 30% stake in Guyana Stabroek Block alongside ExxonMobil 45% and CNOOC 25%. Guyana Liza Phase 1 and 2 plus Payara FPSOs producing ~900,000 bpd combined. Acquired by Chevron in 2024 for $53 billion — deal completed after arbitration.', mbpd:'30% Stabroek stake' },
+    { lat:4.0, lng:-53.0, name:'TotalEnergies (Suriname)', country:'Suriname', detail:'TotalEnergies and APA Corporation made major deepwater discoveries on Block 58 offshore Suriname. Krabdagu and Sapakara finds hold multi-billion barrel potential. FID expected mid-2020s. Could establish Suriname as a significant Atlantic Basin producer alongside Guyana.', mbpd:'Pre-FID development' },
+
+    // AFRICA & MIDDLE EAST INDEPENDENTS
+    { lat:31.5, lng:34.4, name:'Energean', country:'Israel / Greece', detail:'London-listed independent focused on Eastern Mediterranean. Flagship: Karish gas field offshore Israel producing since 2022. Also operates in Greece, Egypt, Italy, and North Sea. Acquired Edison E&P assets to expand European footprint.', mbpd:'~0.17 Mbpd BOE' },
+    { lat:5.4, lng:-4.0, name:'Tullow Oil', country:'Ghana', detail:'Africa-focused independent operating Jubilee and TEN fields offshore Ghana in partnership with Kosmos Energy. Previously had Kenya Turkana Basin assets sold in 2024. Jubilee field remains one of West Africa\'s most significant independent-operated assets.', mbpd:'~0.06 Mbpd production' },
+    { lat:5.6, lng:-0.4, name:'Kosmos Energy', country:'Ghana / Mauritania / Senegal', detail:'US-listed African-focused independent. Partner in Ghana Jubilee and TEN fields. Key asset: Greater Tortue Ahmeyim LNG project operated by BP at Senegal/Mauritania border, which began commercial LNG production in June 2025. Also has Namibia and South Africa deepwater exploration blocks.', mbpd:'~0.07 Mbpd BOE' },
+    { lat:-8.9, lng:13.4, name:'Azule Energy', country:'Angola', detail:'50-50 joint venture between Eni and BP formed in 2022, combining all their Angolan upstream assets into one entity. Now Angola\'s largest independent equity producer with 2 billion barrels equivalent net resources and producing ~250,000 bpd. Also holds 42.5% in Namibia Orange Basin Block 2914A.', mbpd:'~0.25 Mbpd BOE' },
+    { lat:-22.2, lng:14.4, name:'TotalEnergies / Shell (Namibia)', country:'Namibia', detail:'Orange Basin offshore Namibia has emerged as a world-class frontier discovery. TotalEnergies operates Venus block estimated at ~3 billion barrels. Shell operates Graff and La Rona blocks. Galp operated Mopane field made additional discovery in 2024. FID for Venus expected 2026 with first oil 2029-2030.', mbpd:'Pre-FID — 200,000+ bpd potential' },
+    { lat:-15.1, lng:40.6, name:'Eni / ExxonMobil (Mozambique LNG)', country:'Mozambique', detail:'Eni operates Coral South FLNG producing since 2022 at 3.5 MTPA. Coral North under construction. ExxonMobil leads Rovuma LNG development — force majeure lifted with FID potentially 2026. TotalEnergies Mozambique LNG remains delayed due to security concerns in Cabo Delgado province.', mbpd:'LNG: 120+ cargoes exported' },
+    { lat:17.4, lng:-16.1, name:'BP / Kosmos (GTA LNG)', country:'Mauritania / Senegal', detail:'Greater Tortue Ahmeyim LNG project operated by BP with Kosmos Energy, PETROSEN (Senegal) and SMH (Mauritania). Began commercial LNG production June 2025. Phase 1 capacity: 2.4 MTPA from deepwater gas straddling the Senegal-Mauritania maritime border. A landmark West Africa gas development.', mbpd:'LNG: 2.4 MTPA Phase 1' },
+    { lat:5.3, lng:-4.2, name:'Aker Energy', country:'Ghana / Norway', detail:'Norwegian independent with stake in Ghana\'s Deepwater Tano Cape Three Points block. Backed by Kjell Inge Rokke\'s Aker Group. Partner alongside TotalEnergies on Pecan field development — one of Ghana\'s next major deepwater oil developments targeting first oil in the late 2020s.', mbpd:'Development phase' }
+  ];
+
+  producers.forEach(function(p){
+    L.marker([p.lat,p.lng],{icon:icon('#e8a020',14)})
+      .bindPopup(popup('#e8a020','Crude Oil Producer',p.name,p.country,p.detail,p.mbpd),{className:'oil-popup',maxWidth:300})
+      .addTo(layers.producers);
+  });
+
+  // ══════════════════════════════════════════
+  // 2. REFINERIES (blue)
+  // ══════════════════════════════════════════
+  var refineries = [
+    // ASIA
+    { lat:20.0, lng:73.0, name:'Jamnagar Complex', country:'India', detail:'World\'s largest single-location refining complex. Reliance Industries operates two refineries — combined capacity 1.24 Mbpd. Processes Middle East and West African crude.' },
+    { lat:1.3, lng:103.8, name:'Singapore Refining Hub', country:'Singapore', detail:'Asia\'s oil trading and refining capital. Shell, ExxonMobil, and Singapore Refining Company operate major refineries. Regional distribution hub.' },
+    { lat:37.5, lng:126.6, name:'Ulsan Refinery Complex', country:'South Korea', detail:'SK Innovation and S-Oil operate major refineries. Combined capacity ~1.1 Mbpd. Processes predominantly Middle East and African crude grades.' },
+    { lat:31.2, lng:121.5, name:'Shanghai Refinery Hub', country:'China', detail:'SINOPEC flagship refinery at Jinshan. Multiple facilities around Shanghai-Yangtze Delta. Processes Saudi, Iraqi, and West African crude.' },
+    { lat:29.5, lng:121.9, name:'Zhoushan Refinery', country:'China', detail:'Home to "teapot" independent refiners and major Zhoushan Petrochemical complex. Processes discounted sanctioned crude and spot market purchases.' },
+    { lat:22.5, lng:114.1, name:'Huizhou, Guangdong', country:'China', detail:'CNOOC Huizhou refinery. Processes crude from CNOOC\'s international upstream assets including West Africa and South America.' },
+    { lat:35.7, lng:139.7, name:'Tokyo Bay Refineries', country:'Japan', detail:'Multiple Japanese refineries including ENEOS and Idemitsu. Declining throughput due to falling domestic demand. Process predominantly Middle East crude.' },
+    { lat:34.7, lng:135.5, name:'Osaka Bay Refineries', country:'Japan', detail:'ENEOS Osaka and Cosmo Oil refineries. Processing Middle East crude for Japanese domestic consumption.' },
+    { lat:13.0, lng:80.3, name:'Chennai Refinery', country:'India', detail:'Indian Oil Manali refinery and Chennai Petroleum refinery. Processes Middle East crude. Key supply point for South India.' },
+    { lat:22.6, lng:88.4, name:'Haldia Refinery', country:'India', detail:'Indian Oil Haldia refinery. East coast facility processing Middle East and West African crude for eastern India market.' },
+
+    // EUROPE
+    { lat:51.9, lng:4.1, name:'Rotterdam Refinery Hub', country:'Netherlands', detail:'Europe\'s largest refining centre. Shell Pernis (~400,000 bpd), BP and ExxonMobil also operate. Processes crude from Middle East, North Sea, West Africa, and Russia.' },
+    { lat:53.4, lng:-2.2, name:'Stanlow Refinery', country:'United Kingdom', detail:'Operated by Essar Oil UK. ~200,000 bpd capacity. Processes North Sea and imported crude for UK domestic market.' },
+    { lat:43.3, lng:5.4, name:'Fos-Lavera, France', country:'France', detail:'TotalEnergies and Ineos operate major Mediterranean refineries. Connected to SPMR pipeline carrying crude across France.' },
+    { lat:38.3, lng:21.7, name:'Corinth Refinery', country:'Greece', detail:'Motor Oil Hellas refinery. Major Mediterranean processor. Processes Middle East and North African crude. Significant refined product exporter.' },
+    { lat:45.5, lng:9.2, name:'Milan Area Refineries', country:'Italy', detail:'ENI operates Sannazzaro refinery. Italy\'s refining system processes Libya, North Sea, and Middle East crude via Mediterranean terminals.' },
+    { lat:40.4, lng:-3.7, name:'Repsol Refineries (Spain)', country:'Spain', detail:'Repsol operates five refineries in Spain with combined 900,000 bpd capacity. Processes North African, Middle East, and Latin American crude.' },
+    { lat:53.5, lng:10.0, name:'Hamburg Refinery', country:'Germany', detail:'Rosneft Deutschland operated refineries. Germany\'s refining system historically relied on Russian crude via Druzhba pipeline — now diversifying.' },
+
+    // MIDDLE EAST
+    { lat:24.0, lng:56.4, name:'Ruwais Refinery', country:'UAE', detail:'ADNOC Ruwais refinery — one of the world\'s largest. ~820,000 bpd capacity. Processes UAE crude for export and domestic use.' },
+    { lat:22.0, lng:59.5, name:'Sohar Refinery', country:'Oman', detail:'Oman Oil Refineries and Petroleum Industries processes domestic Oman crude for fuel supply and export of refined products.' },
+    { lat:29.4, lng:47.9, name:'Mina Abdullah Refinery', country:'Kuwait', detail:'KNPC operates Mina Abdullah and Mina Al-Ahmadi refineries. Processes Kuwait crude for domestic market and product exports.' },
+
+    // AMERICAS
+    { lat:29.9, lng:-90.1, name:'Louisiana Refinery Hub', country:'USA', detail:'Marathon\'s Garyville (~560,000 bpd) and multiple other facilities. Largest US refining concentration. Processes domestic WTI and imported heavy crude.' },
+    { lat:29.7, lng:-95.4, name:'Houston Refinery Hub', country:'USA', detail:'LyondellBasell Houston and ExxonMobil Baytown refineries. Major processors of WTI, Canadian heavy crude, and Latin American imports.' },
+    { lat:-23.0, lng:-43.2, name:'Rio de Janeiro Refineries', country:'Brazil', detail:'Petrobras REDUC (Duque de Caxias) and REPLAN (Paulinia). Process domestic pre-salt crude. Key fuel supply for Southeast Brazil.' },
+    { lat:19.4, lng:-99.1, name:'Tula Refinery', country:'Mexico', detail:'PEMEX Tula refinery — one of Mexico\'s largest. Processes Maya heavy crude. Supplies Mexico City and Central Mexico fuel demand.' },
+
+    // AFRICA
+    { lat:-33.9, lng:18.4, name:'Cape Town Refinery', country:'South Africa', detail:'SAPREF (Shell/BP joint venture) at Cape Town. Processes imported crude for South African domestic market. ~180,000 bpd capacity.' },
+    { lat:30.1, lng:31.3, name:'Alexandria Refinery', country:'Egypt', detail:'MIDOR refinery at Alexandria. Mediterranean-facing facility processing imported Urals and domestic Egyptian crude.' },
+
+    // FSU
+    { lat:59.9, lng:30.3, name:'St Petersburg Refinery', country:'Russia', detail:'Kirishinefteorgsintez (Kinef) refinery — one of Russia\'s largest. ~22 Mtpa capacity. Processing Russian Urals crude.' },
+    { lat:55.7, lng:37.6, name:'Moscow Refineries', country:'Russia', detail:'Multiple Moscow-area refineries including MNPZ. Supply Central Russia domestic market. Processing West Siberian crude.' }
+  ];
+
+  refineries.forEach(function(r){
+    L.marker([r.lat,r.lng],{icon:icon('#3a8fc1',13,'square')})
+      .bindPopup(popup('#3a8fc1','Refinery Hub',r.name,r.country,r.detail,null),{className:'oil-popup',maxWidth:300})
+      .addTo(layers.refineries);
+  });
+
+  // ══════════════════════════════════════════
+  // 3. GOVERNMENT ENTITIES / NOCs (pink/magenta)
+  // ══════════════════════════════════════════
+  var govts = [
+    // OPEC / MIDDLE EAST NOCs
+    { lat:24.7, lng:46.7, name:'Saudi Aramco', country:'Saudi Arabia', detail:'World\'s largest oil company by production and reserves. Wholly owned by Saudi government. Controls Ghawar, Safaniya, and other super-giant fields. Manages ~265 billion barrels proven reserves.' },
+    { lat:24.5, lng:54.4, name:'ADNOC', country:'UAE', detail:'Abu Dhabi National Oil Company. Controls UAE\'s 97 billion barrel reserve base. Operates onshore and offshore fields. Has international investment arm (ADNOC International).' },
+    { lat:29.3, lng:47.7, name:'Kuwait Petroleum Corporation (KPC)', country:'Kuwait', detail:'Umbrella entity controlling all Kuwait oil assets. Subsidiaries include KOC (upstream), KNPC (refining), KOTC (transport). Controls ~102 billion barrels proven reserves.' },
+    { lat:33.3, lng:44.4, name:'Iraq National Oil Company (INOC)', country:'Iraq', detail:'Controls Iraq\'s ~145 billion barrel reserves. Operates super-giant Rumaila field. Works with international IOCs including BP, Lukoil, PetroChina on major field development contracts.' },
+    { lat:32.0, lng:53.7, name:'NIOC (National Iranian Oil Co)', country:'Iran', detail:'Controls Iran\'s vast reserves (~155 billion barrels — 4th globally). Highly sanctioned limiting export markets. Sells primarily to China, Syria and select buyers.' },
+    { lat:25.3, lng:51.2, name:'QatarEnergy', country:'Qatar', detail:'Former Qatar Petroleum. Controls world\'s largest LNG export capacity plus significant condensate production. North Field is world\'s largest single natural gas reservoir.' },
+    { lat:24.0, lng:56.0, name:'Petroleum Development Oman (PDO)', country:'Oman', detail:'60% government-owned, 34% Shell, 4% TotalEnergies, 2% Partex. Produces ~70% of Oman\'s crude. Manages complex of onshore and offshore fields.' },
+
+    // AFRICA NOCs
+    { lat:6.5, lng:3.4, name:'NNPC (Nigeria)', country:'Nigeria', detail:'Nigerian National Petroleum Corporation Ltd. Manages upstream interests via NAPIMS. National oil sector regulator. Controls all joint ventures with international majors including Shell, Chevron, TotalEnergies.' },
+    { lat:-8.8, lng:13.2, name:'Sonangol', country:'Angola', detail:'Angola\'s state oil company. Acts as concessionaire for all upstream blocks. Partners include TotalEnergies, BP, ExxonMobil, and Chinese companies CNOOC and Sinopec.' },
+    { lat:27.0, lng:17.0, name:'NOC Libya', country:'Libya', detail:'National Oil Corporation — sole state entity with authority over Libyan oil. Controls access to ~48 billion barrel reserve base. Production frequently disrupted by political conflicts.' },
+    { lat:28.0, lng:2.0, name:'Sonatrach', country:'Algeria', detail:'One of the world\'s largest state oil companies. Controls all Algerian oil and gas. Major LNG exporter to Europe. Recently opened upstream to greater IOC participation.' },
+    { lat:5.6, lng:-0.2, name:'GNPC (Ghana)', country:'Ghana', detail:'Ghana National Petroleum Corporation. Partner in Jubilee (with Tullow Oil, Kosmos Energy, Aker) and TEN fields. Growing national oil revenue base.' },
+    { lat:26.8, lng:30.8, name:'EGPC (Egypt)', country:'Egypt', detail:'Egyptian General Petroleum Corporation. Manages Egypt\'s oil interests. Partners with BP, ENI, Apache, and others on concession agreements. Also manages Suez Petroleum Company.' },
+    { lat:15.6, lng:32.5, name:'Sudapet', country:'Sudan', detail:'Sudan\'s national oil company. Manages upstream interests in remaining Sudanese blocks after South Sudan separation. Partners include Chinese companies.' },
+    { lat:6.9, lng:31.3, name:'Nilepet', country:'South Sudan', detail:'South Sudan\'s national petroleum company. Manages interests in Unity, Heglig, and Greater Nile blocks. Relies on Sudan pipeline infrastructure for export.' },
+
+    // RUSSIA / FSU
+    { lat:55.7, lng:37.6, name:'Rosneft', country:'Russia', detail:'Russia\'s largest oil company — majority state owned. Produces ~40% of Russian crude. Key assets in West Siberia, East Siberia (Vankor), and Arctic. International assets in Iraq, Venezuela, and more.' },
+    { lat:48.0, lng:67.0, name:'KazMunayGas (KMG)', country:'Kazakhstan', detail:'Kazakhstan\'s national oil and gas company. Partners in Tengizchevroil (with Chevron), Kashagan (NCOC consortium), and Karachaganak (BG Group, ENI). Major shareholder in CPC pipeline.' },
+    { lat:39.9, lng:50.0, name:'SOCAR', country:'Azerbaijan', detail:'State Oil Company of Azerbaijan Republic. Operates ACG fields in partnership with BP-led consortium. Controls BTC pipeline equity stake. Active international operator in Turkey and Europe.' },
+    { lat:40.0, lng:53.0, name:'Turkmengaz / Turkmennebit', country:'Turkmenistan', detail:'State companies controlling Turkmenistan\'s vast reserves. Primarily gas-focused (world\'s 4th largest gas reserves) but significant crude production at Caspian fields.' },
+
+    // AMERICAS
+    { lat:-22.9, lng:-43.2, name:'Petrobras', country:'Brazil', detail:'Petróleo Brasileiro — majority state-owned. Pre-salt deep-water pioneer. Controls world-class Santos and Campos basin fields. Major exporter to China and USA.' },
+    { lat:10.5, lng:-66.9, name:'PDVSA', country:'Venezuela', detail:'Petróleos de Venezuela. Controls world\'s largest proven reserves (~300 billion barrels heavy crude). Severe operational decline due to economic crisis and sanctions.' },
+    { lat:5.0, lng:-75.5, name:'Ecopetrol', country:'Colombia', detail:'Colombian state-controlled oil company. Listed on NYSE. Operates Vasconia and Castilla heavy crude grades. Expanding internationally with Caribbean and offshore assets.' },
+    { lat:23.0, lng:-102.0, name:'PEMEX', country:'Mexico', detail:'Petróleos Mexicanos. Wholly state-owned. Controls all Mexican upstream. Struggling with debt and declining production. Priority to Dos Bocas refinery expansion.' },
+    { lat:-3.7, lng:-73.2, name:'Petroecuador', country:'Ecuador', detail:'State petroleum company managing national assets. Oriente and Napo heavy crude grades. Trans-Ecuador Pipeline routes crude to Pacific coast Balao terminal.' },
+
+    // ASIA PACIFIC
+    { lat:40.0, lng:116.4, name:'CNPC / PetroChina', country:'China', detail:'China National Petroleum Corporation — largest Chinese NOC by production. Operates Daqing, Xinjiang fields domestically. Major international operator in Iraq, Kazakhstan, Africa, and Sudan.' },
+    { lat:39.9, lng:116.4, name:'Sinopec (CNOOC group)', country:'China', detail:'China\'s second largest NOC. Major downstream operator with refining capacity. Significant international upstream in Angola, Iran, Saudi Arabia, and Americas.' },
+    { lat:20.0, lng:85.8, name:'ONGC', country:'India', detail:'Oil and Natural Gas Corporation. India\'s largest state oil company. Operates Mumbai High offshore field. Has international arm OVL with assets in 15+ countries including Russia (Sakhalin) and Vietnam.' },
+    { lat:3.5, lng:108.0, name:'PETRONAS', country:'Malaysia', detail:'Petroliam Nasional Berhad. Malaysia\'s fully state-owned NOC. Controls all Malaysian petroleum resources. Major international operator in 35+ countries. Hosts Formula 1 team.' },
+    { lat:0.5, lng:101.4, name:'Pertamina', country:'Indonesia', detail:'Indonesian state oil company. Manages domestic production and refining. Significant retail fuel network. International exploration in various countries.' },
+    { lat:20.9, lng:107.0, name:'PetroVietnam (PVN)', country:'Vietnam', detail:'Vietnam Oil and Gas Group. Manages all upstream interests. Bach Ho (White Tiger) field flagship asset. Joint ventures with Russian Zarubezhneft and others.' },
+
+    // OPEC SECRETARIAT
+    { lat:48.2, lng:16.4, name:'OPEC Secretariat', country:'Austria (Vienna)', detail:'Organization of the Petroleum Exporting Countries. Coordinates production policy among 13 member states controlling ~80% of world\'s proven reserves. Plus OPEC+ includes Russia and other non-OPEC producers.' },
+
+    // IEA
+    { lat:48.9, lng:2.3, name:'IEA (Int\'l Energy Agency)', country:'France (Paris)', detail:'International Energy Agency. 31-member intergovernmental organisation. Coordinates strategic petroleum reserves, energy security policy, and publishes key market intelligence including Oil Market Reports.' }
+  ];
+
+  govts.forEach(function(g){
+    L.marker([g.lat,g.lng],{icon:icon('#c94c9a',13,'diamond')})
+      .bindPopup(popup('#c94c9a','Govt Entity / NOC',g.name,g.country,g.detail,null),{className:'oil-popup',maxWidth:300})
+      .addTo(layers.govt);
+  });
+
+  // ══════════════════════════════════════════
+  // 4. EXPORT TERMINALS (green)
+  // ══════════════════════════════════════════
+  var terminals = [
+    { lat:26.6, lng:50.1, name:'Ras Tanura Terminal', country:'Saudi Arabia', detail:'World\'s largest crude oil export terminal. Saudi Aramco operated. Up to 6 Mbpd export capacity. Offshore Sea Island berths load VLCC tankers.' },
+    { lat:27.1, lng:56.3, name:'Fujairah Terminal', country:'UAE', detail:'UAE\'s major export terminal outside Strait of Hormuz. Abu Dhabi Crude Oil Pipeline (ADCOP) delivers Murban crude here for VLCC loading. Strategic bypass point.' },
+    { lat:29.9, lng:48.6, name:'Basra Oil Terminal (BOT)', country:'Iraq', detail:'Iraq\'s main crude export terminal in northern Persian Gulf. Two single point moorings (SPMs) for VLCC loading. Handles ~3 Mbpd of Iraqi exports.' },
+    { lat:26.9, lng:56.3, name:'Bandar Abbas Terminal', country:'Iran', detail:'Main Iranian crude export terminal on Strait of Hormuz. Kharg Island is key offshore terminal. Combined capacity significantly reduced by sanctions.' },
+    { lat:26.8, lng:49.9, name:'Ras Al Khair / Jubail', country:'Saudi Arabia', detail:'Eastern Province export infrastructure. Multiple marine terminals and pipelines. Ras Tanura nearby is dominant export point for Arab Light crude.' },
+    { lat:36.6, lng:36.2, name:'Ceyhan Terminal', country:'Turkey', detail:'Mediterranean terminal for BTC pipeline (Azeri Light from Azerbaijan) and Kirkuk-Ceyhan pipeline (Iraqi Kurdish crude). Major VLCC loading port.' },
+    { lat:46.3, lng:48.0, name:'Novorossiysk Terminal', country:'Russia', detail:'Russia\'s main Black Sea export terminal. CPC pipeline from Kazakhstan\'s Tengiz field also terminates here. VLCC loading for Mediterranean and beyond.' },
+    { lat:6.4, lng:3.4, name:'Bonny Export Terminal', country:'Nigeria', detail:'SPDC/Shell operated. Primary export point for Bonny Light crude. FPSO vessels also operate offshore. Combined Nigerian export capacity ~1.5-2 Mbpd.' },
+    { lat:-8.8, lng:12.3, name:'Luanda Export Terminal', country:'Angola', detail:'Sonangol operated terminal. Handles multiple Angolan crude grades. Offshore FPSOs load directly for VLCC ship-to-ship transfers.' },
+    { lat:-23.0, lng:-44.3, name:'São Sebastião Terminal', country:'Brazil', detail:'Petrobras Almirante Barroso terminal. Primary crude export point for Santos Basin pre-salt production. VLCC loading for Asia-bound shipments.' },
+    { lat:29.1, lng:-89.2, name:'LOOP (Louisiana)', country:'USA', detail:'Louisiana Offshore Oil Port. USA\'s only deepwater offshore oil port. Can handle VLCC vessels. Imports and exports crude for Gulf Coast refineries.' },
+    { lat:27.9, lng:-97.4, name:'Corpus Christi Export Terminal', country:'USA', detail:'Rapidly expanded US crude export hub. Multiple terminals including Moda Midstream and Trafigura\'s MODA. Primary export point for Permian Basin WTI crude.' },
+    { lat:13.1, lng:42.7, name:'Port of Djibouti', country:'Djibouti', detail:'Strategic Red Sea transshipment and bunkering hub. Gateway for East African crude development. Used for commodity transit between Asia, Middle East, and Africa.' },
+    { lat:29.0, lng:48.1, name:'Mina Abdullah Terminal', country:'Kuwait', detail:'KNPC operated terminal. Exports Kuwait crude and refined petroleum products. Connected to domestic refinery network.' },
+    { lat:-34.8, lng:-56.2, name:'Montevideo Terminal', country:'Uruguay', detail:'José Enrique Rodó terminal. Key South Atlantic crude transshipment point for regional cargoes.' },
+    { lat:1.3, lng:103.8, name:'Singapore Oil Hub', country:'Singapore', detail:'World\'s largest ship refuelling port. Jurong Island hosts multiple storage terminals with ~50 million barrels capacity. Asian crude benchmark pricing hub.' },
+    { lat:40.6, lng:14.3, name:'Augusta Terminal', country:'Italy', detail:'Sicilian terminal complex. Key Mediterranean import point for Middle Eastern and North African crude. Serves Italian and Southern European refineries.' },
+    { lat:-34.6, lng:-58.4, name:'Buenos Aires Terminal', country:'Argentina', detail:'YPF operated terminal. Exports Medanito and Escalante crude grades from Patagonia and Neuquén Vaca Muerta shale development.' }
+  ];
+
+  terminals.forEach(function(t){
+    L.marker([t.lat,t.lng],{icon:icon('#5aaa6a',11)})
+      .bindPopup(popup('#5aaa6a','Export Terminal',t.name,t.country,t.detail,null),{className:'oil-popup',maxWidth:300})
+      .addTo(layers.terminals);
+  });
+
+  // ══════════════════════════════════════════
+  // 5. TANKER SHIPPING ROUTES (gold dashed)
+  // ══════════════════════════════════════════
+  var routes = [
+    { name:'Hormuz → India', coords:[[26.5,57],[22,65],[13,72],[20,73]], detail:'World\'s highest volume tanker route. Persian Gulf crude to Indian west coast refineries at Jamnagar and Mumbai. ~40 tankers per day.' },
+    { name:'Hormuz → Singapore / China', coords:[[26.5,57],[18,65],[8,72],[2,80],[1.3,103.8],[15,112],[22,114],[31,121]], detail:'Core Middle East to Asia Pacific route through Indian Ocean and Malacca Strait. China and South Korea are primary destinations.' },
+    { name:'Hormuz → Japan / Korea', coords:[[26.5,57],[20,68],[10,75],[4,80],[1.3,103.8],[12,118],[25,125],[35,130],[35.7,139.7]], detail:'Middle East crude to Northeast Asia. Japan and South Korea import predominantly Middle East crude through this corridor.' },
+    { name:'Suez Canal → Europe', coords:[[26.5,57],[19,50],[14,43],[27,34],[31,32.5],[33,31],[36.6,36.2],[37,22],[43.3,5.4],[51.9,4.1]], detail:'Critical Middle East to Europe route via Red Sea and Suez Canal. Handles ~5 Mbpd. Canal closure creates immediate supply disruption to Europe.' },
+    { name:'West Africa → Europe', coords:[[6.5,3.4],[3,-5],[0,-8],[-5,-12],[-10,-14],[-15,-18],[-5,-10],[10,-15],[25,-20],[37,-9],[43.3,5.4],[51.9,4.1]], detail:'Bonny Light, Girassol, and other West African grades to European refineries. Journey approx 15-20 days.' },
+    { name:'West Africa → USA', coords:[[6.5,3.4],[5,-5],[0,-15],[-3,-20],[5,-30],[15,-45],[25,-60],[29.9,-90.1]], detail:'West African crude to US Gulf Coast refineries. High quality light sweet grades preferred by Gulf Coast refiners.' },
+    { name:'West Africa → Asia', coords:[[6.5,3.4],[-5,-5],[-20,-15],[-35,-25],[-40,-25],[-35,-20],[-20,-15],[0,-5],[20,40],[10,55],[8,72],[1.3,103.8],[20,110],[22,114]], detail:'Long haul West Africa to Asia route around Cape of Good Hope. Growing trade flow especially from Angola to China.' },
+    { name:'Americas → Asia (Pacific)', coords:[[29.9,-90.1],[22,-87],[10,-80],[5,-77],[-5,-80],[-23,-44],[-35,-50],[-40,-55],[-35,-75],[-50,-100],[-40,-120],[-20,-130],[0,-145],[15,-155],[25,-150],[35,155],[22,114]], detail:'Long haul Americas to Asia route via Cape Horn or Panama Canal. Brazilian pre-salt and US WTI to Asian refiners.' },
+    { name:'Americas → Europe (Atlantic)', coords:[[29.9,-90.1],[25,-80],[20,-65],[15,-50],[10,-35],[5,-20],[15,-10],[36,-9],[43.3,5.4],[51.9,4.1]], detail:'Transatlantic crude from US Gulf and Latin America to European refineries. WTI and Brazilian grades increasing to Europe.' },
+    { name:'Russia → Asia (ESPO)', coords:[[56,110],[55,120],[50,130],[45,135],[37.5,126.6],[35,125],[31,121]], detail:'ESPO (East Siberia Pacific Ocean) pipeline crude from Kozmino terminal to China, Japan, and South Korea. Key route since 2022 sanctions.' },
+    { name:'Black Sea → Mediterranean', coords:[[46.3,48],[43,38],[40,32],[37,27],[37,22],[43.3,5.4],[51.9,4.1]], detail:'Russian Urals and CPC Blend from Black Sea via Bosphorus Strait to Mediterranean and Northwest European refineries.' },
+    { name:'Canada → Asia (Vancouver)', coords:[[49.3,-123.1],[48,-135],[40,-145],[30,-155],[20,-165],[5,175],[-5,170],[1,160],[10,145],[22,114]], detail:'Trans-Mountain Pipeline expansion opens Canadian heavy crude export to Asian markets via Westridge Marine Terminal, Vancouver.' },
+    { name:'Brazil → China', coords:[[-23,-44],[-25,-40],[-30,-35],[-35,-30],[-35,-20],[-20,-10],[0,5],[10,35],[8,60],[5,75],[1,100],[10,110],[22,114]], detail:'Key emerging trade route. Petrobras pre-salt light crude to Chinese refiners and independents (teapots). Growing volumes.' },
+    { name:'Cape of Good Hope Route', coords:[[6.5,3.4],[-5,5],[-15,10],[-25,15],[-35,20],[-40,25],[-35,30],[-20,35],[-10,40],[0,45],[10,55],[15,60],[20,65],[26,57]], detail:'Alternative to Suez Canal route for super-large tankers. Also used when Suez is unavailable. Adds ~10-14 days vs Suez routing.' }
+  ];
+
+  routes.forEach(function(r){
+    L.polyline(r.coords,{color:'#c9a84c',weight:1.6,opacity:0.5,dashArray:'7,5'})
+      .bindPopup(popup('#c9a84c','Tanker Route',r.name,'Global Trade Route',r.detail,null),{className:'oil-popup',maxWidth:300})
+      .addTo(layers.routes);
+  });
+
+  // ── ADD ALL TO MAP ──
+  Object.keys(layers).forEach(function(k){ layers[k].addTo(map); });
+
+  // ── LAYER TOGGLE ──
+  var states = { producers:true, refineries:true, govt:true, terminals:true, routes:true };
+
+  window.toggleLayer = function(name, btn){
+    if(states[name]){
+      map.removeLayer(layers[name]);
+      states[name] = false;
+      btn.classList.remove('on');
+    } else {
+      layers[name].addTo(map);
+      states[name] = true;
+      btn.classList.add('on');
+    }
+  };
+
+  // ══════════════════════════════════════════
+  // LIVE AIS TANKER TRACKING
+  // ══════════════════════════════════════════
+  var AIS_KEY = 'c559a815fe39aa2071377fb1bc6065673af49ec7';
+  var tankerLayer = L.layerGroup().addTo(map);
+  var tankerMarkers = {};
+  var aisSocket = null;
+  var tankerFeedActive = false;
+  var tankerCount = 0;
+
+  function setStatus(msg, count){
+    var bar = document.getElementById('ais-status');
+    var txt = document.getElementById('ais-status-text');
+    var cnt = document.getElementById('ais-count');
+    if(bar) bar.style.display = msg ? 'block' : 'none';
+    if(txt) txt.textContent = msg || '';
+    if(cnt) cnt.textContent = count !== undefined ? count + ' tankers tracked' : '';
+  }
+
+  function tankerIcon(heading){
+    var rot = (heading && heading >= 0 && heading <= 360) ? heading : 0;
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="20" viewBox="0 0 14 20">'
+      + '<polygon points="7,0 13,18 7,14 1,18" fill="#00e5ff" stroke="#001a26" stroke-width="1" opacity="0.95"/>'
+      + '</svg>';
+    return L.divIcon({
+      className: '',
+      html: '<div style="transform:rotate('+rot+'deg);width:14px;height:20px;filter:drop-shadow(0 0 5px #00e5ff88);">'+svg+'</div>',
+      iconSize: [14, 20],
+      iconAnchor: [7, 10]
+    });
+  }
+
+  function startTankerFeed(){
+    if(aisSocket) return;
+    tankerCount = 0;
+    setStatus('Connecting to AIS stream...');
+
+    try {
+      aisSocket = new WebSocket('wss://stream.aisstream.io/v0/stream');
+    } catch(e){
+      setStatus('WebSocket not supported in this browser.');
+      return;
+    }
+
+    aisSocket.onopen = function(){
+      // No ship type filter — receive ALL vessels, we filter tankers client-side
+      // This avoids the issue of some tankers not having their type set correctly
+      var sub = {
+        APIKey: AIS_KEY,
+        BoundingBoxes: [[[-90, -180], [90, 180]]],
+        FilterMessageTypes: ['PositionReport']
+      };
+      aisSocket.send(JSON.stringify(sub));
+      setStatus('Connected — receiving live AIS data...', 0);
+    };
+
+    aisSocket.onmessage = function(evt){
+      try {
+        var msg = JSON.parse(evt.data);
+
+        // Accept both PositionReport and ShipStaticData message types
+        if(!msg.Message) return;
+        var pos = msg.Message.PositionReport;
+        if(!pos) return;
+
+        var meta = msg.MetaData || {};
+        var mmsi = String(meta.MMSI || pos.UserID || '');
+        if(!mmsi) return;
+
+        var lat = parseFloat(pos.Latitude);
+        var lng = parseFloat(pos.Longitude);
+        if(isNaN(lat) || isNaN(lng)) return;
+        if(lat === 0 && lng === 0) return;
+        if(lat < -90 || lat > 90 || lng < -180 || lng > 180) return;
+
+        // Filter to tanker ship types 80-89 via ShipType in metadata
+        var shipType = parseInt(meta.ShipType || 0);
+        // If ShipType is present and NOT a tanker (80-89), skip
+        // If ShipType is 0 or missing, allow through (unknown type)
+        if(shipType > 0 && (shipType < 80 || shipType > 89)) return;
+
+        var name    = (meta.ShipName || 'Unknown Tanker').trim();
+        var dest    = (meta.Destination || 'Not reported').trim();
+        var speed   = pos.SpeedOverGround !== undefined ? (pos.SpeedOverGround / 10).toFixed(1) + ' kn' : 'N/A';
+        var heading = pos.TrueHeading !== undefined && pos.TrueHeading < 360
+                      ? pos.TrueHeading
+                      : (pos.CourseOverGround || 0);
+        var navStatus = pos.NavigationalStatus;
+        var statusMap = {
+          0:'Under way (engine)', 1:'At anchor', 2:'Not under command',
+          3:'Restricted manoeuvrability', 4:'Constrained by draught',
+          5:'Moored', 6:'Aground', 7:'Engaged in fishing', 8:'Under way (sailing)'
+        };
+        var statusStr = statusMap[navStatus] !== undefined ? statusMap[navStatus] : 'Unknown';
+
+        var popupHtml = '<div style="font-family:Verdana,sans-serif;">'
+          + '<div style="background:#00e5ff;padding:8px 14px;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#003344;margin:-1px -1px 12px;">Live AIS — Tanker</div>'
+          + '<div style="padding:0 14px 14px;">'
+          + '<strong style="font-family:Georgia,serif;font-size:16px;color:#ffffff;display:block;margin-bottom:4px;">'+name+'</strong>'
+          + '<span style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#00e5ff;">MMSI: '+mmsi+'</span>'
+          + '<p style="font-size:11px;line-height:1.75;color:#8a9ab8;margin-top:10px;">'
+          + '<b style="color:#c9a84c;">Destination:</b> '+dest+'<br>'
+          + '<b style="color:#c9a84c;">Speed:</b> '+speed+'<br>'
+          + '<b style="color:#c9a84c;">Heading:</b> '+heading+'°<br>'
+          + '<b style="color:#c9a84c;">Status:</b> '+statusStr
+          + '</p></div></div>';
+
+        if(tankerMarkers[mmsi]){
+          tankerMarkers[mmsi].setLatLng([lat, lng]);
+          tankerMarkers[mmsi].setIcon(tankerIcon(heading));
+          tankerMarkers[mmsi].getPopup().setContent(popupHtml);
+        } else {
+          var m = L.marker([lat, lng], {icon: tankerIcon(heading)})
+            .bindPopup(popupHtml, {className:'oil-popup', maxWidth:300});
+          m.addTo(tankerLayer);
+          tankerMarkers[mmsi] = m;
+          tankerCount++;
+          if(tankerCount % 5 === 0){
+            setStatus('Live AIS stream active', tankerCount);
+          }
+        }
+      } catch(e){ /* silently ignore bad messages */ }
+    };
+
+    aisSocket.onerror = function(e){
+      setStatus('AIS connection error — check browser console for details.');
+      console.error('AIS WebSocket error:', e);
+    };
+
+    aisSocket.onclose = function(e){
+      aisSocket = null;
+      if(tankerFeedActive){
+        setStatus('AIS stream disconnected (code: '+e.code+'). Toggle off and on to reconnect.');
+      }
+      console.log('AIS stream closed, code:', e.code, e.reason);
+    };
+  }
+
+  function stopTankerFeed(){
+    if(aisSocket){
+      aisSocket.close();
+      aisSocket = null;
+    }
+    tankerLayer.clearLayers();
+    tankerMarkers = {};
+    tankerCount = 0;
+    setStatus(null);
+  }
+
+  window.toggleTankerFeed = function(btn){
+    if(tankerFeedActive){
+      stopTankerFeed();
+      tankerFeedActive = false;
+      btn.classList.remove('on');
+    } else {
+      startTankerFeed();
+      tankerFeedActive = true;
+      btn.classList.add('on');
+    }
+  };
+
+})();
+  }
+  if(window.L){ initMap(); } else {
+    var lJs=document.createElement('script');
+    lJs.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+    lJs.onload=function(){ initMap(); };
+    document.head.appendChild(lJs);
+  }
+})();
+</script>
