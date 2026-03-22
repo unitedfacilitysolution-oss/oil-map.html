@@ -1,0 +1,1677 @@
+
+<style>
+  #ufs-market-page * { box-sizing: border-box; margin: 0; padding: 0; }
+  #ufs-market-page {
+    width: 100%;
+    font-family: Georgia, serif;
+    background: #060e16;
+    overflow: hidden;
+  }
+
+  /* GOLD BAR */
+  #ufs-market-page .gold-bar {
+    height: 4px;
+    background: linear-gradient(90deg, #c9a84c, #e8c97a, #c9a84c);
+  }
+
+  /* HEADER */
+  #ufs-market-page .map-header {
+    background: #0a141e;
+    padding: 48px 48px 40px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    align-items: flex-end;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(201,168,76,0.15);
+  }
+
+  #ufs-market-page .header-left {}
+
+  #ufs-market-page .hdr-eyebrow {
+    font-family: Verdana, sans-serif;
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #c9a84c;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  #ufs-market-page .hdr-title {
+    font-family: Georgia, serif;
+    font-size: 36px;
+    font-weight: 400;
+    color: #ffffff;
+    line-height: 1.1;
+  }
+  #ufs-market-page .hdr-title em { color: #c9a84c; font-style: italic; }
+
+  #ufs-market-page .hdr-sub {
+    font-family: Verdana, sans-serif;
+    font-size: 12px;
+    color: #7a8ba8;
+    line-height: 1.75;
+    max-width: 420px;
+    margin-top: 10px;
+  }
+
+  /* CONTROLS */
+  #ufs-market-page .map-controls {
+    background: #0d1b2a;
+    padding: 16px 48px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    border-bottom: 1px solid rgba(201,168,76,0.1);
+  }
+
+  #ufs-market-page .ctrl-label {
+    font-family: Verdana, sans-serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #c9a84c;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+
+  #ufs-market-page .ctrl-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: Verdana, sans-serif;
+    font-size: 10px;
+    padding: 7px 14px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.04);
+    color: #a0aabe;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  #ufs-market-page .ctrl-btn.on {
+    border-color: var(--c);
+    background: var(--c);
+    color: #fff;
+  }
+  #ufs-market-page .ctrl-btn.on.dark-text { color: #0a141e; }
+  #ufs-market-page .ctrl-btn:hover { border-color: #c9a84c; color: #c9a84c; }
+  #ufs-market-page .ctrl-btn.on:hover { color: inherit; }
+
+  #ufs-market-page .ctrl-dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  #ufs-market-page .ctrl-divider {
+    width: 1px; height: 24px;
+    background: rgba(255,255,255,0.08);
+    flex-shrink: 0;
+    margin: 0 4px;
+  }
+
+  #ufs-market-page .reset-btn {
+    font-family: Verdana, sans-serif;
+    font-size: 10px;
+    padding: 7px 14px;
+    border: 1px solid rgba(201,168,76,0.3);
+    background: transparent;
+    color: #c9a84c;
+    cursor: pointer;
+    margin-left: auto;
+  }
+  #ufs-market-page .reset-btn:hover { background: #c9a84c; color: #0a141e; }
+
+  /* MAP WRAP */
+  #ufs-market-page .map-wrap {
+    position: relative;
+    width: 100%;
+    height: 680px;
+    background: #0a141e;
+  }
+
+  #ufs-market-page #globe-map {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* STATS BAND */
+  #ufs-market-page .stats-band {
+    background: #0a141e;
+    display: flex;
+    flex-wrap: wrap;
+    border-top: 1px solid rgba(201,168,76,0.12);
+  }
+
+  #ufs-market-page .stat-item {
+    flex: 1;
+    min-width: 130px;
+    padding: 24px 20px;
+    text-align: center;
+    border-right: 1px solid rgba(201,168,76,0.08);
+  }
+  #ufs-market-page .stat-item:last-child { border-right: none; }
+
+  #ufs-market-page .stat-num {
+    display: block;
+    font-family: Georgia, serif;
+    font-size: 28px;
+    color: #c9a84c;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  #ufs-market-page .stat-lbl {
+    display: block;
+    font-family: Verdana, sans-serif;
+    font-size: 8px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #5a6a7a;
+    line-height: 1.5;
+  }
+
+  /* LEGEND */
+  #ufs-market-page .legend-band {
+    background: #0d1b2a;
+    padding: 24px 48px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    align-items: center;
+    border-top: 1px solid rgba(201,168,76,0.1);
+    border-bottom: 1px solid rgba(201,168,76,0.1);
+  }
+
+  #ufs-market-page .leg-title {
+    font-family: Verdana, sans-serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #c9a84c;
+    flex-shrink: 0;
+  }
+
+  #ufs-market-page .leg-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+  }
+
+  #ufs-market-page .leg-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: Verdana, sans-serif;
+    font-size: 10px;
+    color: #7a8ba8;
+  }
+
+  #ufs-market-page .leg-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  #ufs-market-page .leg-line {
+    width: 24px; height: 2px;
+    flex-shrink: 0;
+  }
+
+  /* REGIONAL SECTION */
+  #ufs-market-page .regional {
+    background: #060e16;
+    padding: 64px 48px;
+  }
+
+  #ufs-market-page .regional-hdr {
+    margin-bottom: 40px;
+  }
+
+  #ufs-market-page .sec-eyebrow {
+    font-family: Verdana, sans-serif;
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #c9a84c;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  #ufs-market-page .sec-h2 {
+    font-family: Georgia, serif;
+    font-size: 32px;
+    font-weight: 400;
+    color: #ffffff;
+  }
+
+  #ufs-market-page .regional-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    background: rgba(255,255,255,0.04);
+  }
+
+  #ufs-market-page .reg-card {
+    flex: 1;
+    min-width: 220px;
+    background: #0a141e;
+    padding: 32px 26px;
+    border-top: 2px solid #c9a84c;
+  }
+
+  #ufs-market-page .reg-name {
+    display: block;
+    font-family: Verdana, sans-serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #c9a84c;
+    margin-bottom: 10px;
+  }
+
+  #ufs-market-page .reg-title {
+    display: block;
+    font-family: Georgia, serif;
+    font-size: 18px;
+    color: #ffffff;
+    margin-bottom: 10px;
+    line-height: 1.2;
+  }
+
+  #ufs-market-page .reg-text {
+    font-family: Verdana, sans-serif;
+    font-size: 11px;
+    line-height: 1.85;
+    color: #7a8ba8;
+  }
+
+  /* FOOTER */
+  #ufs-market-page .footer {
+    background: #04080f;
+    padding: 30px 48px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid rgba(201,168,76,0.12);
+  }
+
+  #ufs-market-page .footer-brand {
+    font-family: Georgia, serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #f4f1ec;
+  }
+  #ufs-market-page .footer-brand span { color: #c9a84c; }
+
+  #ufs-market-page .footer-copy {
+    font-family: Verdana, sans-serif;
+    font-size: 10px;
+    color: #2a3548;
+  }
+
+  /* Leaflet popup custom */
+  .oil-popup .leaflet-popup-content-wrapper {
+    background: #0d1b2a;
+    border: 1px solid rgba(201,168,76,0.25);
+    border-radius: 0;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    padding: 0;
+  }
+  .oil-popup .leaflet-popup-tip { background: #0d1b2a; }
+  .oil-popup .leaflet-popup-content { margin: 0; min-width: 240px; max-width: 300px; }
+</style>
+
+<div id="ufs-market-page">
+
+  <div class="gold-bar"></div>
+
+  <!-- HEADER -->
+  <div class="map-header">
+    <div class="header-left">
+      <span class="hdr-eyebrow">Global Oil Infrastructure Intelligence</span>
+      <p class="hdr-title">World Crude Oil <em>Market Map</em></p>
+      <p class="hdr-sub">Interactive globe showing crude oil producers, refineries, government controlling entities, export terminals, and primary tanker shipping routes worldwide. Click any marker for detail.</p>
+    </div>
+  </div>
+
+  <!-- LAYER CONTROLS -->
+  <div class="map-controls">
+    <span class="ctrl-label">Layers:</span>
+    <button class="ctrl-btn on dark-text" id="btn-producers" style="--c:#e8a020" onclick="toggleLayer('producers',this)">
+      <span class="ctrl-dot" style="background:#e8a020"></span> Producers
+    </button>
+    <button class="ctrl-btn on" id="btn-refineries" style="--c:#3a8fc1" onclick="toggleLayer('refineries',this)">
+      <span class="ctrl-dot" style="background:#3a8fc1"></span> Refineries
+    </button>
+    <button class="ctrl-btn on" id="btn-govt" style="--c:#c94c9a" onclick="toggleLayer('govt',this)">
+      <span class="ctrl-dot" style="background:#c94c9a"></span> Govt Entities / NOCs
+    </button>
+    <button class="ctrl-btn on" id="btn-terminals" style="--c:#5aaa6a" onclick="toggleLayer('terminals',this)">
+      <span class="ctrl-dot" style="background:#5aaa6a"></span> Export Terminals
+    </button>
+    <button class="ctrl-btn on dark-text" id="btn-routes" style="--c:#c9a84c" onclick="toggleLayer('routes',this)">
+      <span class="ctrl-dot" style="background:#c9a84c"></span> Tanker Routes
+    </button>
+    <button class="ctrl-btn on" id="btn-pipelines" style="--c:#e05252" onclick="toggleLayer('pipelines',this)">
+      <span class="ctrl-dot" style="background:#e05252"></span> Pipelines
+    </button>
+    <button class="ctrl-btn on" id="btn-rigs" style="--c:#ff6b35" onclick="toggleLayer('rigs',this)">
+      <span class="ctrl-dot" style="background:#ff6b35"></span> Offshore Rigs
+    </button>
+    <div class="ctrl-divider"></div>
+    <button class="ctrl-btn" id="btn-tankers" style="--c:#00e5ff" onclick="toggleLiveTankers(this)">
+      <span class="ctrl-dot" style="background:#00e5ff"></span> Live Tankers
+    </button>
+    <div class="ctrl-divider"></div>
+    <button class="reset-btn" onclick="resetView()">Reset View</button>
+  </div>
+
+  <!-- LIVE TANKER PANEL (VesselFinder embed) -->
+  <div id="live-tanker-panel" style="display:none; position:relative; width:100%; height:680px; background:#0a141e; border-bottom:2px solid rgba(0,229,255,0.2);">
+    <div style="position:absolute;top:0;left:0;right:0;background:#031a26;padding:8px 24px;font-family:Verdana,sans-serif;font-size:10px;color:#00e5ff;border-bottom:1px solid rgba(0,229,255,0.15);z-index:10;display:flex;align-items:center;gap:16px;">
+      <span>&#9679; LIVE AIS — Global Tanker Traffic</span>
+      <span style="color:#5a6a7a;">Powered by VesselFinder · Click any vessel for details · Filter: Tankers</span>
+    </div>
+    <iframe
+      id="vesselfinder-frame"
+      src="https://www.vesselfinder.com/aismap?zoom=2&lat=20&lon=15&width=100%25&height=680&shownames=false&mmsi=0&shiptype=6&fleet=&fleet_name=&fleet_hide_old_positions=false&clickable=true&show_track=false"
+      width="100%" height="680"
+      frameborder="0"
+      style="width:100%;height:680px;border:none;display:block;margin-top:30px;"
+      allowfullscreen>
+    </iframe>
+  </div>
+
+  <!-- MAP -->
+  <div class="map-wrap">
+    <div id="globe-map"></div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-band">
+    <div class="stat-item">
+      <span class="stat-num">100M+</span>
+      <span class="stat-lbl">Barrels / day<br>produced globally</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">50M+</span>
+      <span class="stat-lbl">Barrels / day<br>internationally traded</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">700+</span>
+      <span class="stat-lbl">Active refineries<br>worldwide</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">40+</span>
+      <span class="stat-lbl">Major producing<br>nations</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">5,000+</span>
+      <span class="stat-lbl">Active tankers<br>in global fleet</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">80%+</span>
+      <span class="stat-lbl">Reserves controlled<br>by NOCs</span>
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend-band">
+    <span class="leg-title">Legend</span>
+    <div class="leg-items">
+      <div class="leg-item"><div class="leg-dot" style="background:#e8a020"></div> Crude Oil Producers</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#3a8fc1"></div> Refineries</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#c94c9a"></div> Govt Entities / NOCs</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#5aaa6a"></div> Export Terminals</div>
+      <div class="leg-item"><div class="leg-line" style="background:#c9a84c;border-top:2px dashed #c9a84c;height:0"></div> Tanker Routes</div>
+      <div class="leg-item"><div class="leg-line" style="background:#e05252;border-top:2px solid #e05252;height:0"></div> Oil Pipelines</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#ff6b35;box-shadow:0 0 6px #ff6b35"></div> Offshore Rigs / FPSOs</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#00e5ff;box-shadow:0 0 6px #00e5ff"></div> Live Tankers (AIS)</div>
+    </div>
+  </div>
+
+  <!-- REGIONAL OVERVIEW -->
+  <div class="regional">
+    <div class="regional-hdr">
+      <span class="sec-eyebrow">Regional Intelligence</span>
+      <p class="sec-h2">Key Producing and Refining Regions</p>
+    </div>
+    <div class="regional-grid">
+
+      <div class="reg-card">
+        <span class="reg-name">Middle East</span>
+        <span class="reg-title">The World's Largest Export Region</span>
+        <p class="reg-text">Saudi Aramco, ADNOC, KPC, INOC, and QatarEnergy collectively control the majority of global proven reserves. The Persian Gulf handles over 20 Mbpd of crude exports — approximately 40% of global seaborne crude trade.</p>
+      </div>
+
+      <div class="reg-card">
+        <span class="reg-name">West Africa</span>
+        <span class="reg-title">Premium Light Sweet Crude</span>
+        <p class="reg-text">NNPC (Nigeria), Sonangol (Angola), and GNPC (Ghana) control the region's production. Bonny Light and Girassol grades are among the most sought-after globally. A primary UFS operational region.</p>
+      </div>
+
+      <div class="reg-card">
+        <span class="reg-name">Americas</span>
+        <span class="reg-title">Fastest Growing Export Region</span>
+        <p class="reg-text">The United States, Brazil (Petrobras), and Guyana (ExxonMobil-led) are rapidly expanding export capacity. WTI and Brazilian pre-salt grades are in high demand from Asian and European refiners.</p>
+      </div>
+
+      <div class="reg-card">
+        <span class="reg-name">Asia Pacific</span>
+        <span class="reg-title">World's Largest Import Region</span>
+        <p class="reg-text">SINOPEC, PetroChina, Indian Oil, and Japanese refiners collectively represent the world's largest crude import market. Over 60% of Middle East and African crude flows to this region.</p>
+      </div>
+
+      <div class="reg-card">
+        <span class="reg-name">Russia / CIS</span>
+        <span class="reg-title">Sanctions-Affected Major Producer</span>
+        <p class="reg-text">Rosneft and Gazprom Neft control Russia's vast reserves. Urals crude rerouted from Europe to Asia since 2022. Kazakhstan's KazMunayGas exports Tengiz and Kashagan blend via CPC pipeline.</p>
+      </div>
+
+      <div class="reg-card">
+        <span class="reg-name">North Africa</span>
+        <span class="reg-title">Mediterranean Gateway</span>
+        <p class="reg-text">NOC Libya, Sonatrach Algeria, and EGPC Egypt control significant reserves with direct pipeline and tanker access to European Mediterranean refineries. Light sweet crude grades command premium pricing.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-brand">United <span>Facility</span> Solution</div>
+    <div class="footer-copy">2024 United Facility Solution. All rights reserved. Map data representative of global oil trade infrastructure.</div>
+  </div>
+
+  <div class="gold-bar"></div>
+
+</div>
+
+<script>
+(function(){
+  if(!document.getElementById('leaflet-css-ufs')){
+    var lCss=document.createElement('link');
+    lCss.id='leaflet-css-ufs';
+    lCss.rel='stylesheet';
+    lCss.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+    document.head.appendChild(lCss);
+  }
+  function initMap(){
+(function(){
+
+  var DEFAULT_CENTER = [20, 15];
+  var DEFAULT_ZOOM = 2;
+
+  var map = L.map('globe-map', {
+    center: DEFAULT_CENTER,
+    zoom: DEFAULT_ZOOM,
+    minZoom: 2,
+    maxZoom: 10,
+    worldCopyJump: true,
+    zoomControl: true
+  });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+
+  window.resetView = function(){ map.setView(DEFAULT_CENTER, DEFAULT_ZOOM); };
+
+  // ── ICON FACTORY ──
+  function icon(color, size, shape){
+    size = size || 13;
+    var inner = shape === 'diamond'
+      ? '<div style="width:'+(size*0.8)+'px;height:'+(size*0.8)+'px;background:'+color+';transform:rotate(45deg);border:1.5px solid rgba(255,255,255,0.5);box-shadow:0 0 8px '+color+'99;"></div>'
+      : shape === 'square'
+      ? '<div style="width:'+size+'px;height:'+size+'px;background:'+color+';border:1.5px solid rgba(255,255,255,0.5);box-shadow:0 0 8px '+color+'99;"></div>'
+      : '<div style="width:'+size+'px;height:'+size+'px;background:'+color+';border-radius:50%;border:2px solid rgba(255,255,255,0.45);box-shadow:0 0 8px '+color+'99;"></div>';
+    return L.divIcon({ className:'', html:inner, iconSize:[size,size], iconAnchor:[size/2,size/2] });
+  }
+
+  // ── POPUP FACTORY ──
+  function popup(color, category, name, country, detail, mbpd){
+    var extra = mbpd ? '<div style="margin-top:10px;padding:8px 12px;background:rgba(201,168,76,0.08);border-left:2px solid #c9a84c;font-family:Verdana,sans-serif;font-size:10px;color:#c9a84c;">'+mbpd+'</div>' : '';
+    return '<div style="font-family:Verdana,sans-serif;">'
+      +'<div style="background:'+color+';padding:8px 14px;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:'+(color==='#c9a84c'||color==='#e8a020'?'#0a141e':'#fff')+';margin:-1px -1px 12px;">'+category+'</div>'
+      +'<div style="padding:0 14px 14px;">'
+      +'<strong style="font-family:Georgia,serif;font-size:16px;color:#ffffff;display:block;margin-bottom:4px;">'+name+'</strong>'
+      +'<span style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#c9a84c;">'+country+'</span>'
+      +'<p style="font-size:11px;line-height:1.75;color:#8a9ab8;margin-top:10px;">'+detail+'</p>'
+      +extra
+      +'</div></div>';
+  }
+
+  // ══════════════════════════════════════════
+  // LAYER GROUPS
+  // ══════════════════════════════════════════
+  var layers = {
+    producers: L.layerGroup(),
+    refineries: L.layerGroup(),
+    govt: L.layerGroup(),
+    terminals: L.layerGroup(),
+    routes: L.layerGroup(),
+    pipelines: L.layerGroup(),
+    rigs: L.layerGroup()
+  };
+
+  // ══════════════════════════════════════════
+  // 1. CRUDE OIL PRODUCERS (orange)
+  // ══════════════════════════════════════════
+  var producers = [
+    // MIDDLE EAST
+    { lat:24.7, lng:46.7, name:'Saudi Arabia', country:'Kingdom of Saudi Arabia', detail:'World\'s largest crude exporter with ~12 Mbpd capacity. Key grades: Arab Light, Arab Extra Light, Arab Heavy. Exports to Asia, Europe, and USA.', mbpd:'~12.0 Mbpd capacity' },
+    { lat:33.3, lng:44.4, name:'Iraq', country:'Republic of Iraq', detail:'OPEC\'s second largest producer. Basra Light and Basra Heavy grades exported from southern terminals. Northern Kirkuk crude via Turkey.', mbpd:'~4.5 Mbpd production' },
+    { lat:24.5, lng:54.4, name:'UAE', country:'United Arab Emirates', detail:'ADNOC is the national operator. Murban crude is primary export grade. Das Island and Fujairah are key export points.', mbpd:'~3.0 Mbpd production' },
+    { lat:29.3, lng:47.7, name:'Kuwait', country:'State of Kuwait', detail:'Kuwait Petroleum Corporation controls all production. Kuwait Export Crude (KEC) is primary grade. Single export terminal at Mina Al-Ahmadi.', mbpd:'~2.7 Mbpd capacity' },
+    { lat:25.3, lng:51.2, name:'Qatar', country:'State of Qatar', detail:'QatarEnergy dominates. Primarily LNG exporter but also produces significant condensates and crude. Al-Shaheen is key crude grade.', mbpd:'~1.8 Mbpd liquids' },
+    { lat:32.0, lng:53.7, name:'Iran', country:'Islamic Republic of Iran', detail:'NIOC controls vast reserves — 3rd largest globally. Iranian Light and Heavy grades. Under US and EU sanctions limiting exports.', mbpd:'~3.5 Mbpd (sanctioned)' },
+    { lat:15.6, lng:48.5, name:'Yemen', country:'Republic of Yemen', detail:'Marib Light is primary crude grade. Production severely reduced by ongoing conflict. Masila Basin key producing area.', mbpd:'<0.1 Mbpd (conflict)' },
+    { lat:24.0, lng:56.0, name:'Oman', country:'Sultanate of Oman', detail:'Petroleum Development Oman (PDO) is key operator. Oman crude is benchmark grade for Asian markets. Exports primarily to Asia.', mbpd:'~1.0 Mbpd production' },
+
+    // WEST AFRICA
+    { lat:6.5, lng:3.4, name:'Nigeria', country:'Federal Republic of Nigeria', detail:'Africa\'s largest oil producer. Bonny Light, Forcados, Qua Iboe are premium grades sought globally. NNPC controls national production.', mbpd:'~1.5 Mbpd production' },
+    { lat:-8.8, lng:13.2, name:'Angola', country:'Republic of Angola', detail:'Sub-Saharan Africa\'s second largest producer. Sonangol is national operator. Cabinda, Girassol, and CLOV grades exported primarily to Asia.', mbpd:'~1.1 Mbpd production' },
+    { lat:5.6, lng:-0.2, name:'Ghana', country:'Republic of Ghana', detail:'GNPC is national operator. Jubilee and TEN oil fields produce light sweet crude. Offshore FPSO loading for direct tanker export.', mbpd:'~0.17 Mbpd production' },
+    { lat:3.9, lng:9.7, name:'Cameroon', country:'Republic of Cameroon', detail:'SNH controls national upstream interests. Lokele crude exported from Kribi terminal. Production slowly declining.', mbpd:'~0.07 Mbpd production' },
+    { lat:1.7, lng:9.6, name:'Equatorial Guinea', country:'Republic of Equatorial Guinea', detail:'GEPetrol is national company. Zafiro crude is primary export grade. Offshore production via FPSO vessels.', mbpd:'~0.09 Mbpd production' },
+    { lat:-0.2, lng:9.4, name:'Gabon', country:'Gabonese Republic', detail:'Gabon Oil Company (GOC) manages state interests. Rabi Light crude. Libreville is administrative centre, crude exported from Gamba.', mbpd:'~0.21 Mbpd production' },
+
+    // NORTH AFRICA
+    { lat:27.0, lng:17.0, name:'Libya', country:'State of Libya', detail:'NOC Libya controls all production. Excellent quality low-sulphur Es Sider and Sharara crude. Production volatile due to political instability.', mbpd:'~1.2 Mbpd (variable)' },
+    { lat:28.0, lng:2.0, name:'Algeria', country:'People\'s Democratic Republic of Algeria', detail:'Sonatrach is one of the world\'s largest state oil companies. Saharan Blend is primary crude grade. Pipeline exports to Europe plus LNG.', mbpd:'~1.0 Mbpd production' },
+    { lat:26.8, lng:30.8, name:'Egypt', country:'Arab Republic of Egypt', detail:'EGPC is national operator. Suez blend and Belayim crude grades. Egypt also earns revenues from Suez Canal crude transit fees.', mbpd:'~0.6 Mbpd production' },
+
+    // EAST AFRICA
+    { lat:15.6, lng:32.5, name:'Sudan', country:'Republic of Sudan', detail:'Sudapet manages national interests. Pipeline to Port Sudan on Red Sea for export. Production reduced following South Sudan separation.', mbpd:'~0.07 Mbpd production' },
+    { lat:6.9, lng:31.3, name:'South Sudan', country:'Republic of South Sudan', detail:'Nilepet is national company. Landlocked — crude piped to Port Sudan. Dar Blend and Nile Blend are export grades.', mbpd:'~0.15 Mbpd production' },
+    { lat:-1.3, lng:36.8, name:'Kenya', country:'Republic of Kenya', detail:'NOCK is national company. Ngamia and Amosing fields in Turkana Basin. Pipeline development ongoing for future exports.', mbpd:'Pre-export development' },
+
+    // FSU / RUSSIA
+    { lat:56.0, lng:60.0, name:'Russia (Siberia)', country:'Russian Federation', detail:'Rosneft and Gazprom Neft control vast West Siberian fields. Urals crude is benchmark. ESPO pipeline supplies Asia. Exports rerouted since 2022 sanctions.', mbpd:'~9.5 Mbpd production' },
+    { lat:68.0, lng:33.0, name:'Russia (Arctic)', country:'Russian Federation', detail:'Novy Port and ARCO crude from Arctic fields. Varandey terminal for Nenets crude. Increasingly strategic despite harsh conditions.', mbpd:'Part of 9.5 Mbpd total' },
+    { lat:39.9, lng:50.0, name:'Azerbaijan', country:'Republic of Azerbaijan', detail:'SOCAR is national company. Azeri Light crude is highly prized. BTC pipeline to Ceyhan, Turkey for Mediterranean export.', mbpd:'~0.65 Mbpd production' },
+    { lat:48.0, lng:67.0, name:'Kazakhstan', country:'Republic of Kazakhstan', detail:'KazMunayGas is national company. Tengiz (Chevron-led) and Kashagan (international consortium) are flagship fields. CPC pipeline to Novorossiysk.', mbpd:'~1.7 Mbpd production' },
+    { lat:40.0, lng:53.0, name:'Turkmenistan', country:'Turkmenistan', detail:'Turkmengaz and Turkmennebit control resources. Primarily gas focused but produces significant crude. Export routes limited by geography.', mbpd:'~0.22 Mbpd production' },
+
+    // AMERICAS
+    { lat:30.0, lng:-97.0, name:'Permian Basin (Texas)', country:'United States of America', detail:'World\'s most prolific shale oil region. WTI Midland is the benchmark grade. Major operators: ExxonMobil, Pioneer, Chevron, ConocoPhillips.', mbpd:'~6.0 Mbpd from Permian' },
+    { lat:61.2, lng:-149.9, name:'Alaska', country:'United States of America', detail:'Alaska North Slope crude. Trans-Alaska Pipeline System (TAPS) routes crude to Valdez terminal. ANS is separate benchmark grade.', mbpd:'~0.45 Mbpd production' },
+    { lat:51.5, lng:-114.1, name:'Alberta Oil Sands', country:'Canada', detail:'World\'s largest oil sands deposit. Western Canadian Select (WCS) heavy crude. Syncrude and Cold Lake are other key grades. Primarily exported to USA.', mbpd:'~3.9 Mbpd production' },
+    { lat:-22.9, lng:-43.2, name:'Brazil (Pre-Salt)', country:'Federative Republic of Brazil', detail:'Petrobras operates massive deep-water pre-salt fields in Santos and Campos basins. High quality light crude exported primarily to China and USA.', mbpd:'~3.4 Mbpd production' },
+    { lat:6.1, lng:-58.1, name:'Guyana', country:'Co-operative Republic of Guyana', detail:'Stabroek Block operated by ExxonMobil, Hess, and CNOOC. Rapid production growth underway. Liza crude is primary export grade.', mbpd:'~0.65 Mbpd and growing' },
+    { lat:10.5, lng:-66.9, name:'Venezuela', country:'Bolivarian Republic of Venezuela', detail:'PDVSA controls vast heavy crude reserves in Orinoco Belt. Production severely impacted by economic conditions and sanctions.', mbpd:'~0.8 Mbpd (reduced)' },
+    { lat:-3.7, lng:-73.2, name:'Ecuador', country:'Republic of Ecuador', detail:'Petroecuador is national operator. Oriente and Napo are heavy crude grades. Amazon Basin fields connect via SOTE pipeline to Pacific coast.', mbpd:'~0.47 Mbpd production' },
+    { lat:5.0, lng:-75.5, name:'Colombia', country:'Republic of Colombia', detail:'Ecopetrol is national company. Vasconia and Castilla heavy crude grades. Pipeline network routes to Caribbean and Pacific export terminals.', mbpd:'~0.75 Mbpd production' },
+    { lat:23.0, lng:-102.0, name:'Mexico', country:'United Mexican States', detail:'PEMEX is national company. Maya heavy crude is primary export grade. Offshore Cantarell and Ku-Maloob-Zaap fields are major producers.', mbpd:'~1.6 Mbpd production' },
+
+    // ASIA PACIFIC
+    { lat:3.5, lng:108.0, name:'Malaysia', country:'Malaysia', detail:'PETRONAS is national company. Tapis and Minas sweet crude grades are prized by Asian refiners. Offshore Sarawak and Sabah are key producing areas.', mbpd:'~0.55 Mbpd production' },
+    { lat:0.5, lng:101.4, name:'Indonesia', country:'Republic of Indonesia', detail:'Pertamina is national company. Minas and Duri crude grades. Production declining from peak but Indonesia remains a significant regional player.', mbpd:'~0.61 Mbpd production' },
+    { lat:20.9, lng:107.0, name:'Vietnam', country:'Socialist Republic of Vietnam', detail:'PetroVietnam is national company. Bach Ho (White Tiger) field is major producer. Light sweet crude exported primarily to East Asian refiners.', mbpd:'~0.20 Mbpd production' },
+    { lat:28.0, lng:84.0, name:'India (Offshore)', country:'Republic of India', detail:'ONGC is national company. Mumbai High field is flagship offshore asset. India is a large net importer despite domestic production.', mbpd:'~0.55 Mbpd domestic' },
+    { lat:37.0, lng:75.0, name:'China (Xinjiang)', country:'People\'s Republic of China', detail:'CNPC/PetroChina operates Tarim Basin fields. Daqing in northeast is flagship onshore field. China is world\'s 4th largest producer but much larger importer.', mbpd:'~4.0 Mbpd domestic' },
+
+    // IOC SUPERMAJORS
+    { lat:51.5, lng:-0.1, name:'BP (British Petroleum)', country:'United Kingdom', detail:'Supermajor with upstream assets in 30+ countries. Key producing regions: Gulf of Mexico, North Sea, Azerbaijan ACG field, Angola, Iraq, and Oman. Partner in Greater Tortue Ahmeyim LNG project at Senegal/Mauritania border which began production in 2025.', mbpd:'~2.3 Mbpd BOE' },
+    { lat:52.3, lng:4.9, name:'Shell plc', country:'Netherlands / UK', detail:'Global supermajor with upstream in 70+ countries. Key assets: Prelude FLNG (Australia), Perdido (Gulf of Mexico), Nigeria Bonga deepwater, and North Sea. Merging UK North Sea assets with Equinor creating the basin\'s largest independent producer.', mbpd:'~2.9 Mbpd BOE' },
+    { lat:48.9, lng:2.4, name:'TotalEnergies', country:'France', detail:'French supermajor with major upstream in Africa, Middle East, and North Sea. Key assets: Uganda Tilenga, Angola deepwater, Iraq Al Halfaya, Qatar NFE LNG, and Ivory Coast Baleine field. Plans 3% annual production growth to 2030.', mbpd:'~2.5 Mbpd BOE' },
+    { lat:45.4, lng:9.1, name:'Eni S.p.A.', country:'Italy', detail:'Italian supermajor with the strongest Africa upstream portfolio of any IOC. Key assets: Angola, Ivory Coast Baleine field, Mozambique Coral FLNG, Libya Waha, and Egypt Zohr gas field. Known for fast-tracking projects on time and under budget.', mbpd:'~1.7 Mbpd BOE' },
+    { lat:59.9, lng:10.7, name:'Equinor', country:'Norway', detail:'Norwegian supermajor majority owned by Norwegian state. World\'s largest deepwater operator. Key assets: Johan Sverdrup (Norway, ~700,000 bpd), Angola blocks, Algeria, Brazil Roncador, and US Gulf of Mexico. Merging UK North Sea assets with Shell.', mbpd:'~1.3 Mbpd BOE' },
+    { lat:48.2, lng:16.3, name:'OMV', country:'Austria', detail:'Austrian integrated oil and gas company with upstream in Norway, Romania via Petrom subsidiary, Libya, Tunisia, UAE, and Malaysia. Romania is a large conventional asset base. Focused on growing upstream internationally.', mbpd:'~0.4 Mbpd BOE' },
+    { lat:40.3, lng:-3.6, name:'Repsol', country:'Spain', detail:'Spanish integrated independent with upstream in Libya Waha field, Algeria, Trinidad, Peru, and North Sea. Also a major Spanish refiner. Plans to increase Libyan output through deeper IOC collaboration. ~0.6 Mbpd BOE production.', mbpd:'~0.6 Mbpd BOE' },
+
+    // LARGE US INDEPENDENTS
+    { lat:29.6, lng:-95.3, name:'ConocoPhillips', country:'United States', detail:'World\'s largest independent E&P company. Key assets: Permian Basin, Eagle Ford, Bakken, Alaska North Slope Willow Project, Norway, Australia Barossa LNG, and Malaysia. Acquired Marathon Oil in 2024 for $22.5 billion. Pure upstream focus with no downstream operations.', mbpd:'~1.8 Mbpd BOE' },
+    { lat:29.7, lng:-95.5, name:'EOG Resources', country:'United States', detail:'One of the most efficient US shale producers. Operates primarily in Permian Basin, Eagle Ford (Texas), Bakken (North Dakota), DJ Basin (Colorado), and international assets in Trinidad and Tobago. Known for proprietary drilling technology and low break-even costs.', mbpd:'~1.0 Mbpd BOE' },
+    { lat:29.8, lng:-95.6, name:'Occidental Petroleum', country:'United States', detail:'Major US independent with Permian Basin core assets — largest Permian acreage holder. Also operates in DJ Basin, Gulf of Mexico, Oman, UAE Al Hosn gas, and Algeria. Known for enhanced oil recovery expertise and Carbon Engineering direct air capture investment.', mbpd:'~1.2 Mbpd BOE' },
+    { lat:29.5, lng:-95.4, name:'Devon Energy', country:'United States', detail:'Major US shale independent. Dominant in Delaware Basin (Permian), Eagle Ford, Anadarko Basin (Oklahoma), Powder River Basin (Wyoming), and Williston Basin (Bakken). Known for variable dividend model and capital discipline.', mbpd:'~0.7 Mbpd BOE' },
+    { lat:31.8, lng:-102.3, name:'Diamondback Energy', country:'United States', detail:'Permian Basin pure-play independent. Operates exclusively in Midland and Delaware sub-basins. One of the lowest-cost Permian operators. Rapid growth through acquisitions. Acquired Endeavor Energy Resources in 2024 making it the third largest Permian producer.', mbpd:'~0.46 Mbpd BOE' },
+    { lat:29.4, lng:-98.5, name:'Coterra Energy', country:'United States', detail:'US independent formed from Cabot Oil and Gas and Cimarex merger. Major positions in Permian Basin (Wolfcamp/Bone Spring), Marcellus Shale (Pennsylvania), and Anadarko Basin. Balanced oil and gas portfolio.', mbpd:'~0.65 Mbpd BOE' },
+    { lat:29.5, lng:-95.2, name:'APA Corporation', country:'United States', detail:'US independent (formerly Apache Corporation). Key assets: Permian Basin, North Sea (Forties pipeline system operator), Egypt Western Desert, and Suriname Block 58 (major deepwater discovery with TotalEnergies). Suriname could be a transformational asset.', mbpd:'~0.4 Mbpd BOE' },
+    { lat:39.7, lng:-104.9, name:'Civitas Resources', country:'United States', detail:'Colorado-based independent operating in DJ Basin (Wattenberg Field, world-class tight oil). Expanded into Permian Basin in 2023 through major acquisitions. One of the fastest growing US independents by production.', mbpd:'~0.35 Mbpd BOE' },
+
+    // CANADIAN INDEPENDENTS
+    { lat:56.7, lng:-111.4, name:'Canadian Natural Resources (CNQ)', country:'Canada', detail:'Canada\'s largest independent oil producer. Operates Athabasca oil sands at Horizon and Albian Sands, Pelican Lake thermal operations, and North Sea assets. Known for free cash flow generation with low decline rates.', mbpd:'~1.4 Mbpd BOE' },
+    { lat:51.0, lng:-114.0, name:'Suncor Energy', country:'Canada', detail:'Integrated Canadian oil sands giant. Operates Fort Hills, Syncrude (majority owner), and Base Plant oil sands mines. Also has offshore Newfoundland Hibernia and Terra Nova assets. Upgraders convert bitumen to synthetic crude oil.', mbpd:'~0.77 Mbpd BOE' },
+    { lat:51.1, lng:-113.9, name:'Cenovus Energy', country:'Canada', detail:'Major Canadian integrated producer. Owns 100% of Christina Lake and Foster Creek SAGD thermal in-situ operations. Also operates US refineries in Toledo, Lima, and Superior. Acquired Husky Energy in 2021.', mbpd:'~0.8 Mbpd BOE' },
+
+    // EUROPEAN INDEPENDENTS
+    { lat:57.1, lng:-2.1, name:'Harbour Energy', country:'United Kingdom', detail:'UK\'s largest listed independent E&P company after acquiring Wintershall Dea assets in 2024, becoming a super-independent with assets in North Sea, Norway, Germany, Mexico, Vietnam, and Indonesia. North Sea Tolmount and Zennor fields are key UK assets.', mbpd:'~0.5 Mbpd BOE' },
+    { lat:57.0, lng:-2.3, name:'Ithaca Energy', country:'United Kingdom', detail:'UK North Sea independent that acquired Eni\'s North Sea assets in 2024. Operates Captain, Stella, and Elgin-Franklin fields. Listed on London Stock Exchange. Growing North Sea portfolio.', mbpd:'~0.1 Mbpd BOE' },
+    { lat:55.6, lng:37.5, name:'Lukoil', country:'Russia', detail:'Russia\'s second largest oil company and largest private oil producer. Key fields: West Qurna-2 (Iraq), Caspian Filanovsky, and Timan-Pechora basin. International upstream in Iraq, Mexico, Uzbekistan, and West Africa.', mbpd:'~1.5 Mbpd production' },
+    { lat:55.8, lng:37.7, name:'Gazprom Neft', country:'Russia', detail:'Oil subsidiary of Gazprom. Produces from Prirazlomnoye (Russia\'s first Arctic offshore), Novy Port, and Messoyakha fields. Also international upstream in Iraq Badra field, Libya, and Venezuela.', mbpd:'~0.7 Mbpd production' },
+
+    // ASIA PACIFIC INDEPENDENTS
+    { lat:-31.9, lng:115.9, name:'Woodside Energy', country:'Australia', detail:'Australia\'s largest independent oil and gas company. Flagship assets: North West Shelf LNG and Pluto LNG. Merged with BHP Petroleum in 2022. Operates Sangomar oil field in Senegal which achieved first oil in 2024 — a landmark West Africa development.', mbpd:'~0.55 Mbpd BOE' },
+    { lat:-31.8, lng:115.8, name:'Santos Ltd', country:'Australia', detail:'Major Australian independent with LNG assets at Darwin LNG, PNG LNG stake, and Barossa gas development in Northern Australia. Also PNG, East Timor, and Cooper Basin conventional oil and gas assets.', mbpd:'~0.3 Mbpd BOE' },
+
+    // LATIN AMERICA INDEPENDENTS
+    { lat:-34.7, lng:-58.5, name:'YPF', country:'Argentina', detail:'Argentina\'s national oil company (51% state owned). Flagship operator of Vaca Muerta shale formation — world\'s second largest shale gas and fourth largest shale oil reserve. Rapidly expanding with IOC partnerships including Shell, TotalEnergies, and Chevron.', mbpd:'~0.25 Mbpd production' },
+    { lat:6.0, lng:-58.2, name:'Hess Corporation (Stabroek)', country:'Guyana', detail:'Major US independent holding 30% stake in Guyana Stabroek Block alongside ExxonMobil 45% and CNOOC 25%. Guyana Liza Phase 1 and 2 plus Payara FPSOs producing ~900,000 bpd combined. Acquired by Chevron in 2024 for $53 billion — deal completed after arbitration.', mbpd:'30% Stabroek stake' },
+    { lat:4.0, lng:-53.0, name:'TotalEnergies (Suriname)', country:'Suriname', detail:'TotalEnergies and APA Corporation made major deepwater discoveries on Block 58 offshore Suriname. Krabdagu and Sapakara finds hold multi-billion barrel potential. FID expected mid-2020s. Could establish Suriname as a significant Atlantic Basin producer alongside Guyana.', mbpd:'Pre-FID development' },
+
+    // AFRICA & MIDDLE EAST INDEPENDENTS
+    { lat:31.5, lng:34.4, name:'Energean', country:'Israel / Greece', detail:'London-listed independent focused on Eastern Mediterranean. Flagship: Karish gas field offshore Israel producing since 2022. Also operates in Greece, Egypt, Italy, and North Sea. Acquired Edison E&P assets to expand European footprint.', mbpd:'~0.17 Mbpd BOE' },
+    { lat:5.4, lng:-4.0, name:'Tullow Oil', country:'Ghana', detail:'Africa-focused independent operating Jubilee and TEN fields offshore Ghana in partnership with Kosmos Energy. Previously had Kenya Turkana Basin assets sold in 2024. Jubilee field remains one of West Africa\'s most significant independent-operated assets.', mbpd:'~0.06 Mbpd production' },
+    { lat:5.6, lng:-0.4, name:'Kosmos Energy', country:'Ghana / Mauritania / Senegal', detail:'US-listed African-focused independent. Partner in Ghana Jubilee and TEN fields. Key asset: Greater Tortue Ahmeyim LNG project operated by BP at Senegal/Mauritania border, which began commercial LNG production in June 2025. Also has Namibia and South Africa deepwater exploration blocks.', mbpd:'~0.07 Mbpd BOE' },
+    { lat:-8.9, lng:13.4, name:'Azule Energy', country:'Angola', detail:'50-50 joint venture between Eni and BP formed in 2022, combining all their Angolan upstream assets into one entity. Now Angola\'s largest independent equity producer with 2 billion barrels equivalent net resources and producing ~250,000 bpd. Also holds 42.5% in Namibia Orange Basin Block 2914A.', mbpd:'~0.25 Mbpd BOE' },
+    { lat:-22.2, lng:14.4, name:'TotalEnergies / Shell (Namibia)', country:'Namibia', detail:'Orange Basin offshore Namibia has emerged as a world-class frontier discovery. TotalEnergies operates Venus block estimated at ~3 billion barrels. Shell operates Graff and La Rona blocks. Galp operated Mopane field made additional discovery in 2024. FID for Venus expected 2026 with first oil 2029-2030.', mbpd:'Pre-FID — 200,000+ bpd potential' },
+    { lat:-15.1, lng:40.6, name:'Eni / ExxonMobil (Mozambique LNG)', country:'Mozambique', detail:'Eni operates Coral South FLNG producing since 2022 at 3.5 MTPA. Coral North under construction. ExxonMobil leads Rovuma LNG development — force majeure lifted with FID potentially 2026. TotalEnergies Mozambique LNG remains delayed due to security concerns in Cabo Delgado province.', mbpd:'LNG: 120+ cargoes exported' },
+    { lat:17.4, lng:-16.1, name:'BP / Kosmos (GTA LNG)', country:'Mauritania / Senegal', detail:'Greater Tortue Ahmeyim LNG project operated by BP with Kosmos Energy, PETROSEN (Senegal) and SMH (Mauritania). Began commercial LNG production June 2025. Phase 1 capacity: 2.4 MTPA from deepwater gas straddling the Senegal-Mauritania maritime border. A landmark West Africa gas development.', mbpd:'LNG: 2.4 MTPA Phase 1' },
+    { lat:5.3, lng:-4.2, name:'Aker Energy', country:'Ghana / Norway', detail:'Norwegian independent with stake in Ghana\'s Deepwater Tano Cape Three Points block. Backed by Kjell Inge Rokke\'s Aker Group. Partner alongside TotalEnergies on Pecan field development — one of Ghana\'s next major deepwater oil developments targeting first oil in the late 2020s.', mbpd:'Development phase' }
+  ];
+
+  producers.forEach(function(p){
+    L.marker([p.lat,p.lng],{icon:icon('#e8a020',14)})
+      .bindPopup(popup('#e8a020','Crude Oil Producer',p.name,p.country,p.detail,p.mbpd),{className:'oil-popup',maxWidth:300})
+      .addTo(layers.producers);
+  });
+
+  // ══════════════════════════════════════════
+  // 2. REFINERIES (blue)
+  // ══════════════════════════════════════════
+  var refineries = [
+    // ASIA
+    { lat:20.0, lng:73.0, name:'Jamnagar Complex', country:'India', detail:'World\'s largest single-location refining complex. Reliance Industries operates two refineries — combined capacity 1.24 Mbpd. Processes Middle East and West African crude.' },
+    { lat:1.3, lng:103.8, name:'Singapore Refining Hub', country:'Singapore', detail:'Asia\'s oil trading and refining capital. Shell, ExxonMobil, and Singapore Refining Company operate major refineries. Regional distribution hub.' },
+    { lat:37.5, lng:126.6, name:'Ulsan Refinery Complex', country:'South Korea', detail:'SK Innovation and S-Oil operate major refineries. Combined capacity ~1.1 Mbpd. Processes predominantly Middle East and African crude grades.' },
+    { lat:31.2, lng:121.5, name:'Shanghai Refinery Hub', country:'China', detail:'SINOPEC flagship refinery at Jinshan. Multiple facilities around Shanghai-Yangtze Delta. Processes Saudi, Iraqi, and West African crude.' },
+    { lat:29.5, lng:121.9, name:'Zhoushan Refinery', country:'China', detail:'Home to "teapot" independent refiners and major Zhoushan Petrochemical complex. Processes discounted sanctioned crude and spot market purchases.' },
+    { lat:22.5, lng:114.1, name:'Huizhou, Guangdong', country:'China', detail:'CNOOC Huizhou refinery. Processes crude from CNOOC\'s international upstream assets including West Africa and South America.' },
+    { lat:35.7, lng:139.7, name:'Tokyo Bay Refineries', country:'Japan', detail:'Multiple Japanese refineries including ENEOS and Idemitsu. Declining throughput due to falling domestic demand. Process predominantly Middle East crude.' },
+    { lat:34.7, lng:135.5, name:'Osaka Bay Refineries', country:'Japan', detail:'ENEOS Osaka and Cosmo Oil refineries. Processing Middle East crude for Japanese domestic consumption.' },
+    { lat:13.0, lng:80.3, name:'Chennai Refinery', country:'India', detail:'Indian Oil Manali refinery and Chennai Petroleum refinery. Processes Middle East crude. Key supply point for South India.' },
+    { lat:22.6, lng:88.4, name:'Haldia Refinery', country:'India', detail:'Indian Oil Haldia refinery. East coast facility processing Middle East and West African crude for eastern India market.' },
+
+    // EUROPE
+    { lat:51.9, lng:4.1, name:'Rotterdam Refinery Hub', country:'Netherlands', detail:'Europe\'s largest refining centre. Shell Pernis (~400,000 bpd), BP and ExxonMobil also operate. Processes crude from Middle East, North Sea, West Africa, and Russia.' },
+    { lat:53.4, lng:-2.2, name:'Stanlow Refinery', country:'United Kingdom', detail:'Operated by Essar Oil UK. ~200,000 bpd capacity. Processes North Sea and imported crude for UK domestic market.' },
+    { lat:43.3, lng:5.4, name:'Fos-Lavera, France', country:'France', detail:'TotalEnergies and Ineos operate major Mediterranean refineries. Connected to SPMR pipeline carrying crude across France.' },
+    { lat:38.3, lng:21.7, name:'Corinth Refinery', country:'Greece', detail:'Motor Oil Hellas refinery. Major Mediterranean processor. Processes Middle East and North African crude. Significant refined product exporter.' },
+    { lat:45.5, lng:9.2, name:'Milan Area Refineries', country:'Italy', detail:'ENI operates Sannazzaro refinery. Italy\'s refining system processes Libya, North Sea, and Middle East crude via Mediterranean terminals.' },
+    { lat:40.4, lng:-3.7, name:'Repsol Refineries (Spain)', country:'Spain', detail:'Repsol operates five refineries in Spain with combined 900,000 bpd capacity. Processes North African, Middle East, and Latin American crude.' },
+    { lat:53.5, lng:10.0, name:'Hamburg Refinery', country:'Germany', detail:'Rosneft Deutschland operated refineries. Germany\'s refining system historically relied on Russian crude via Druzhba pipeline — now diversifying.' },
+
+    // MIDDLE EAST
+    { lat:24.0, lng:56.4, name:'Ruwais Refinery', country:'UAE', detail:'ADNOC Ruwais refinery — one of the world\'s largest. ~820,000 bpd capacity. Processes UAE crude for export and domestic use.' },
+    { lat:22.0, lng:59.5, name:'Sohar Refinery', country:'Oman', detail:'Oman Oil Refineries and Petroleum Industries processes domestic Oman crude for fuel supply and export of refined products.' },
+    { lat:29.4, lng:47.9, name:'Mina Abdullah Refinery', country:'Kuwait', detail:'KNPC operates Mina Abdullah and Mina Al-Ahmadi refineries. Processes Kuwait crude for domestic market and product exports.' },
+
+    // AMERICAS
+    { lat:29.9, lng:-90.1, name:'Louisiana Refinery Hub', country:'USA', detail:'Marathon\'s Garyville (~560,000 bpd) and multiple other facilities. Largest US refining concentration. Processes domestic WTI and imported heavy crude.' },
+    { lat:29.7, lng:-95.4, name:'Houston Refinery Hub', country:'USA', detail:'LyondellBasell Houston and ExxonMobil Baytown refineries. Major processors of WTI, Canadian heavy crude, and Latin American imports.' },
+    { lat:-23.0, lng:-43.2, name:'Rio de Janeiro Refineries', country:'Brazil', detail:'Petrobras REDUC (Duque de Caxias) and REPLAN (Paulinia). Process domestic pre-salt crude. Key fuel supply for Southeast Brazil.' },
+    { lat:19.4, lng:-99.1, name:'Tula Refinery', country:'Mexico', detail:'PEMEX Tula refinery — one of Mexico\'s largest. Processes Maya heavy crude. Supplies Mexico City and Central Mexico fuel demand.' },
+
+    // AFRICA
+    { lat:-33.9, lng:18.4, name:'Cape Town Refinery', country:'South Africa', detail:'SAPREF (Shell/BP joint venture) at Cape Town. Processes imported crude for South African domestic market. ~180,000 bpd capacity.' },
+    { lat:30.1, lng:31.3, name:'Alexandria Refinery', country:'Egypt', detail:'MIDOR refinery at Alexandria. Mediterranean-facing facility processing imported Urals and domestic Egyptian crude.' },
+
+    // FSU
+    { lat:59.9, lng:30.3, name:'St Petersburg Refinery', country:'Russia', detail:'Kirishinefteorgsintez (Kinef) refinery — one of Russia\'s largest. ~22 Mtpa capacity. Processing Russian Urals crude.' },
+    { lat:55.7, lng:37.6, name:'Moscow Refineries', country:'Russia', detail:'Multiple Moscow-area refineries including MNPZ. Supply Central Russia domestic market. Processing West Siberian crude.' }
+  ];
+
+  refineries.forEach(function(r){
+    L.marker([r.lat,r.lng],{icon:icon('#3a8fc1',13,'square')})
+      .bindPopup(popup('#3a8fc1','Refinery Hub',r.name,r.country,r.detail,null),{className:'oil-popup',maxWidth:300})
+      .addTo(layers.refineries);
+  });
+
+  // ══════════════════════════════════════════
+  // 3. GOVERNMENT ENTITIES / NOCs (pink/magenta)
+  // ══════════════════════════════════════════
+  var govts = [
+    // OPEC / MIDDLE EAST NOCs
+    { lat:24.7, lng:46.7, name:'Saudi Aramco', country:'Saudi Arabia', detail:'World\'s largest oil company by production and reserves. Wholly owned by Saudi government. Controls Ghawar, Safaniya, and other super-giant fields. Manages ~265 billion barrels proven reserves.' },
+    { lat:24.5, lng:54.4, name:'ADNOC', country:'UAE', detail:'Abu Dhabi National Oil Company. Controls UAE\'s 97 billion barrel reserve base. Operates onshore and offshore fields. Has international investment arm (ADNOC International).' },
+    { lat:29.3, lng:47.7, name:'Kuwait Petroleum Corporation (KPC)', country:'Kuwait', detail:'Umbrella entity controlling all Kuwait oil assets. Subsidiaries include KOC (upstream), KNPC (refining), KOTC (transport). Controls ~102 billion barrels proven reserves.' },
+    { lat:33.3, lng:44.4, name:'Iraq National Oil Company (INOC)', country:'Iraq', detail:'Controls Iraq\'s ~145 billion barrel reserves. Operates super-giant Rumaila field. Works with international IOCs including BP, Lukoil, PetroChina on major field development contracts.' },
+    { lat:32.0, lng:53.7, name:'NIOC (National Iranian Oil Co)', country:'Iran', detail:'Controls Iran\'s vast reserves (~155 billion barrels — 4th globally). Highly sanctioned limiting export markets. Sells primarily to China, Syria and select buyers.' },
+    { lat:25.3, lng:51.2, name:'QatarEnergy', country:'Qatar', detail:'Former Qatar Petroleum. Controls world\'s largest LNG export capacity plus significant condensate production. North Field is world\'s largest single natural gas reservoir.' },
+    { lat:24.0, lng:56.0, name:'Petroleum Development Oman (PDO)', country:'Oman', detail:'60% government-owned, 34% Shell, 4% TotalEnergies, 2% Partex. Produces ~70% of Oman\'s crude. Manages complex of onshore and offshore fields.' },
+
+    // AFRICA NOCs
+    { lat:6.5, lng:3.4, name:'NNPC (Nigeria)', country:'Nigeria', detail:'Nigerian National Petroleum Corporation Ltd. Manages upstream interests via NAPIMS. National oil sector regulator. Controls all joint ventures with international majors including Shell, Chevron, TotalEnergies.' },
+    { lat:-8.8, lng:13.2, name:'Sonangol', country:'Angola', detail:'Angola\'s state oil company. Acts as concessionaire for all upstream blocks. Partners include TotalEnergies, BP, ExxonMobil, and Chinese companies CNOOC and Sinopec.' },
+    { lat:27.0, lng:17.0, name:'NOC Libya', country:'Libya', detail:'National Oil Corporation — sole state entity with authority over Libyan oil. Controls access to ~48 billion barrel reserve base. Production frequently disrupted by political conflicts.' },
+    { lat:28.0, lng:2.0, name:'Sonatrach', country:'Algeria', detail:'One of the world\'s largest state oil companies. Controls all Algerian oil and gas. Major LNG exporter to Europe. Recently opened upstream to greater IOC participation.' },
+    { lat:5.6, lng:-0.2, name:'GNPC (Ghana)', country:'Ghana', detail:'Ghana National Petroleum Corporation. Partner in Jubilee (with Tullow Oil, Kosmos Energy, Aker) and TEN fields. Growing national oil revenue base.' },
+    { lat:26.8, lng:30.8, name:'EGPC (Egypt)', country:'Egypt', detail:'Egyptian General Petroleum Corporation. Manages Egypt\'s oil interests. Partners with BP, ENI, Apache, and others on concession agreements. Also manages Suez Petroleum Company.' },
+    { lat:15.6, lng:32.5, name:'Sudapet', country:'Sudan', detail:'Sudan\'s national oil company. Manages upstream interests in remaining Sudanese blocks after South Sudan separation. Partners include Chinese companies.' },
+    { lat:6.9, lng:31.3, name:'Nilepet', country:'South Sudan', detail:'South Sudan\'s national petroleum company. Manages interests in Unity, Heglig, and Greater Nile blocks. Relies on Sudan pipeline infrastructure for export.' },
+
+    // RUSSIA / FSU
+    { lat:55.7, lng:37.6, name:'Rosneft', country:'Russia', detail:'Russia\'s largest oil company — majority state owned. Produces ~40% of Russian crude. Key assets in West Siberia, East Siberia (Vankor), and Arctic. International assets in Iraq, Venezuela, and more.' },
+    { lat:48.0, lng:67.0, name:'KazMunayGas (KMG)', country:'Kazakhstan', detail:'Kazakhstan\'s national oil and gas company. Partners in Tengizchevroil (with Chevron), Kashagan (NCOC consortium), and Karachaganak (BG Group, ENI). Major shareholder in CPC pipeline.' },
+    { lat:39.9, lng:50.0, name:'SOCAR', country:'Azerbaijan', detail:'State Oil Company of Azerbaijan Republic. Operates ACG fields in partnership with BP-led consortium. Controls BTC pipeline equity stake. Active international operator in Turkey and Europe.' },
+    { lat:40.0, lng:53.0, name:'Turkmengaz / Turkmennebit', country:'Turkmenistan', detail:'State companies controlling Turkmenistan\'s vast reserves. Primarily gas-focused (world\'s 4th largest gas reserves) but significant crude production at Caspian fields.' },
+
+    // AMERICAS
+    { lat:-22.9, lng:-43.2, name:'Petrobras', country:'Brazil', detail:'Petróleo Brasileiro — majority state-owned. Pre-salt deep-water pioneer. Controls world-class Santos and Campos basin fields. Major exporter to China and USA.' },
+    { lat:10.5, lng:-66.9, name:'PDVSA', country:'Venezuela', detail:'Petróleos de Venezuela. Controls world\'s largest proven reserves (~300 billion barrels heavy crude). Severe operational decline due to economic crisis and sanctions.' },
+    { lat:5.0, lng:-75.5, name:'Ecopetrol', country:'Colombia', detail:'Colombian state-controlled oil company. Listed on NYSE. Operates Vasconia and Castilla heavy crude grades. Expanding internationally with Caribbean and offshore assets.' },
+    { lat:23.0, lng:-102.0, name:'PEMEX', country:'Mexico', detail:'Petróleos Mexicanos. Wholly state-owned. Controls all Mexican upstream. Struggling with debt and declining production. Priority to Dos Bocas refinery expansion.' },
+    { lat:-3.7, lng:-73.2, name:'Petroecuador', country:'Ecuador', detail:'State petroleum company managing national assets. Oriente and Napo heavy crude grades. Trans-Ecuador Pipeline routes crude to Pacific coast Balao terminal.' },
+
+    // ASIA PACIFIC
+    { lat:40.0, lng:116.4, name:'CNPC / PetroChina', country:'China', detail:'China National Petroleum Corporation — largest Chinese NOC by production. Operates Daqing, Xinjiang fields domestically. Major international operator in Iraq, Kazakhstan, Africa, and Sudan.' },
+    { lat:39.9, lng:116.4, name:'Sinopec (CNOOC group)', country:'China', detail:'China\'s second largest NOC. Major downstream operator with refining capacity. Significant international upstream in Angola, Iran, Saudi Arabia, and Americas.' },
+    { lat:20.0, lng:85.8, name:'ONGC', country:'India', detail:'Oil and Natural Gas Corporation. India\'s largest state oil company. Operates Mumbai High offshore field. Has international arm OVL with assets in 15+ countries including Russia (Sakhalin) and Vietnam.' },
+    { lat:3.5, lng:108.0, name:'PETRONAS', country:'Malaysia', detail:'Petroliam Nasional Berhad. Malaysia\'s fully state-owned NOC. Controls all Malaysian petroleum resources. Major international operator in 35+ countries. Hosts Formula 1 team.' },
+    { lat:0.5, lng:101.4, name:'Pertamina', country:'Indonesia', detail:'Indonesian state oil company. Manages domestic production and refining. Significant retail fuel network. International exploration in various countries.' },
+    { lat:20.9, lng:107.0, name:'PetroVietnam (PVN)', country:'Vietnam', detail:'Vietnam Oil and Gas Group. Manages all upstream interests. Bach Ho (White Tiger) field flagship asset. Joint ventures with Russian Zarubezhneft and others.' },
+
+    // OPEC SECRETARIAT
+    { lat:48.2, lng:16.4, name:'OPEC Secretariat', country:'Austria (Vienna)', detail:'Organization of the Petroleum Exporting Countries. Coordinates production policy among 13 member states controlling ~80% of world\'s proven reserves. Plus OPEC+ includes Russia and other non-OPEC producers.' },
+
+    // IEA
+    { lat:48.9, lng:2.3, name:'IEA (Int\'l Energy Agency)', country:'France (Paris)', detail:'International Energy Agency. 31-member intergovernmental organisation. Coordinates strategic petroleum reserves, energy security policy, and publishes key market intelligence including Oil Market Reports.' }
+  ];
+
+  govts.forEach(function(g){
+    L.marker([g.lat,g.lng],{icon:icon('#c94c9a',13,'diamond')})
+      .bindPopup(popup('#c94c9a','Govt Entity / NOC',g.name,g.country,g.detail,null),{className:'oil-popup',maxWidth:300})
+      .addTo(layers.govt);
+  });
+
+  // ══════════════════════════════════════════
+  // 4. EXPORT TERMINALS (green)
+  // ══════════════════════════════════════════
+  var terminals = [
+    { lat:26.6, lng:50.1, name:'Ras Tanura Terminal', country:'Saudi Arabia', detail:'World\'s largest crude oil export terminal. Saudi Aramco operated. Up to 6 Mbpd export capacity. Offshore Sea Island berths load VLCC tankers.' },
+    { lat:27.1, lng:56.3, name:'Fujairah Terminal', country:'UAE', detail:'UAE\'s major export terminal outside Strait of Hormuz. Abu Dhabi Crude Oil Pipeline (ADCOP) delivers Murban crude here for VLCC loading. Strategic bypass point.' },
+    { lat:29.9, lng:48.6, name:'Basra Oil Terminal (BOT)', country:'Iraq', detail:'Iraq\'s main crude export terminal in northern Persian Gulf. Two single point moorings (SPMs) for VLCC loading. Handles ~3 Mbpd of Iraqi exports.' },
+    { lat:26.9, lng:56.3, name:'Bandar Abbas Terminal', country:'Iran', detail:'Main Iranian crude export terminal on Strait of Hormuz. Kharg Island is key offshore terminal. Combined capacity significantly reduced by sanctions.' },
+    { lat:26.8, lng:49.9, name:'Ras Al Khair / Jubail', country:'Saudi Arabia', detail:'Eastern Province export infrastructure. Multiple marine terminals and pipelines. Ras Tanura nearby is dominant export point for Arab Light crude.' },
+    { lat:36.6, lng:36.2, name:'Ceyhan Terminal', country:'Turkey', detail:'Mediterranean terminal for BTC pipeline (Azeri Light from Azerbaijan) and Kirkuk-Ceyhan pipeline (Iraqi Kurdish crude). Major VLCC loading port.' },
+    { lat:46.3, lng:48.0, name:'Novorossiysk Terminal', country:'Russia', detail:'Russia\'s main Black Sea export terminal. CPC pipeline from Kazakhstan\'s Tengiz field also terminates here. VLCC loading for Mediterranean and beyond.' },
+    { lat:6.4, lng:3.4, name:'Bonny Export Terminal', country:'Nigeria', detail:'SPDC/Shell operated. Primary export point for Bonny Light crude. FPSO vessels also operate offshore. Combined Nigerian export capacity ~1.5-2 Mbpd.' },
+    { lat:-8.8, lng:12.3, name:'Luanda Export Terminal', country:'Angola', detail:'Sonangol operated terminal. Handles multiple Angolan crude grades. Offshore FPSOs load directly for VLCC ship-to-ship transfers.' },
+    { lat:-23.0, lng:-44.3, name:'São Sebastião Terminal', country:'Brazil', detail:'Petrobras Almirante Barroso terminal. Primary crude export point for Santos Basin pre-salt production. VLCC loading for Asia-bound shipments.' },
+    { lat:29.1, lng:-89.2, name:'LOOP (Louisiana)', country:'USA', detail:'Louisiana Offshore Oil Port. USA\'s only deepwater offshore oil port. Can handle VLCC vessels. Imports and exports crude for Gulf Coast refineries.' },
+    { lat:27.9, lng:-97.4, name:'Corpus Christi Export Terminal', country:'USA', detail:'Rapidly expanded US crude export hub. Multiple terminals including Moda Midstream and Trafigura\'s MODA. Primary export point for Permian Basin WTI crude.' },
+    { lat:13.1, lng:42.7, name:'Port of Djibouti', country:'Djibouti', detail:'Strategic Red Sea transshipment and bunkering hub. Gateway for East African crude development. Used for commodity transit between Asia, Middle East, and Africa.' },
+    { lat:29.0, lng:48.1, name:'Mina Abdullah Terminal', country:'Kuwait', detail:'KNPC operated terminal. Exports Kuwait crude and refined petroleum products. Connected to domestic refinery network.' },
+    { lat:-34.8, lng:-56.2, name:'Montevideo Terminal', country:'Uruguay', detail:'José Enrique Rodó terminal. Key South Atlantic crude transshipment point for regional cargoes.' },
+    { lat:1.3, lng:103.8, name:'Singapore Oil Hub', country:'Singapore', detail:'World\'s largest ship refuelling port. Jurong Island hosts multiple storage terminals with ~50 million barrels capacity. Asian crude benchmark pricing hub.' },
+    { lat:40.6, lng:14.3, name:'Augusta Terminal', country:'Italy', detail:'Sicilian terminal complex. Key Mediterranean import point for Middle Eastern and North African crude. Serves Italian and Southern European refineries.' },
+    { lat:-34.6, lng:-58.4, name:'Buenos Aires Terminal', country:'Argentina', detail:'YPF operated terminal. Exports Medanito and Escalante crude grades from Patagonia and Neuquén Vaca Muerta shale development.' }
+  ];
+
+  terminals.forEach(function(t){
+    L.marker([t.lat,t.lng],{icon:icon('#5aaa6a',11)})
+      .bindPopup(popup('#5aaa6a','Export Terminal',t.name,t.country,t.detail,null),{className:'oil-popup',maxWidth:300})
+      .addTo(layers.terminals);
+  });
+
+  // ══════════════════════════════════════════
+  // 5. TANKER SHIPPING ROUTES (gold dashed)
+  // ══════════════════════════════════════════
+  var routes = [
+    { name:'Hormuz → India', coords:[[26.5,57],[22,65],[13,72],[20,73]], detail:'World\'s highest volume tanker route. Persian Gulf crude to Indian west coast refineries at Jamnagar and Mumbai. ~40 tankers per day.' },
+    { name:'Hormuz → Singapore / China', coords:[[26.5,57],[18,65],[8,72],[2,80],[1.3,103.8],[15,112],[22,114],[31,121]], detail:'Core Middle East to Asia Pacific route through Indian Ocean and Malacca Strait. China and South Korea are primary destinations.' },
+    { name:'Hormuz → Japan / Korea', coords:[[26.5,57],[20,68],[10,75],[4,80],[1.3,103.8],[12,118],[25,125],[35,130],[35.7,139.7]], detail:'Middle East crude to Northeast Asia. Japan and South Korea import predominantly Middle East crude through this corridor.' },
+    { name:'Suez Canal → Europe', coords:[[26.5,57],[19,50],[14,43],[27,34],[31,32.5],[33,31],[36.6,36.2],[37,22],[43.3,5.4],[51.9,4.1]], detail:'Critical Middle East to Europe route via Red Sea and Suez Canal. Handles ~5 Mbpd. Canal closure creates immediate supply disruption to Europe.' },
+    { name:'West Africa → Europe', coords:[[6.5,3.4],[3,-5],[0,-8],[-5,-12],[-10,-14],[-15,-18],[-5,-10],[10,-15],[25,-20],[37,-9],[43.3,5.4],[51.9,4.1]], detail:'Bonny Light, Girassol, and other West African grades to European refineries. Journey approx 15-20 days.' },
+    { name:'West Africa → USA', coords:[[6.5,3.4],[5,-5],[0,-15],[-3,-20],[5,-30],[15,-45],[25,-60],[29.9,-90.1]], detail:'West African crude to US Gulf Coast refineries. High quality light sweet grades preferred by Gulf Coast refiners.' },
+    { name:'West Africa → Asia', coords:[[6.5,3.4],[-5,-5],[-20,-15],[-35,-25],[-40,-25],[-35,-20],[-20,-15],[0,-5],[20,40],[10,55],[8,72],[1.3,103.8],[20,110],[22,114]], detail:'Long haul West Africa to Asia route around Cape of Good Hope. Growing trade flow especially from Angola to China.' },
+    { name:'Americas → Asia (Pacific)', coords:[[29.9,-90.1],[22,-87],[10,-80],[5,-77],[-5,-80],[-23,-44],[-35,-50],[-40,-55],[-35,-75],[-50,-100],[-40,-120],[-20,-130],[0,-145],[15,-155],[25,-150],[35,155],[22,114]], detail:'Long haul Americas to Asia route via Cape Horn or Panama Canal. Brazilian pre-salt and US WTI to Asian refiners.' },
+    { name:'Americas → Europe (Atlantic)', coords:[[29.9,-90.1],[25,-80],[20,-65],[15,-50],[10,-35],[5,-20],[15,-10],[36,-9],[43.3,5.4],[51.9,4.1]], detail:'Transatlantic crude from US Gulf and Latin America to European refineries. WTI and Brazilian grades increasing to Europe.' },
+    { name:'Russia → Asia (ESPO)', coords:[[56,110],[55,120],[50,130],[45,135],[37.5,126.6],[35,125],[31,121]], detail:'ESPO (East Siberia Pacific Ocean) pipeline crude from Kozmino terminal to China, Japan, and South Korea. Key route since 2022 sanctions.' },
+    { name:'Black Sea → Mediterranean', coords:[[46.3,48],[43,38],[40,32],[37,27],[37,22],[43.3,5.4],[51.9,4.1]], detail:'Russian Urals and CPC Blend from Black Sea via Bosphorus Strait to Mediterranean and Northwest European refineries.' },
+    { name:'Canada → Asia (Vancouver)', coords:[[49.3,-123.1],[48,-135],[40,-145],[30,-155],[20,-165],[5,175],[-5,170],[1,160],[10,145],[22,114]], detail:'Trans-Mountain Pipeline expansion opens Canadian heavy crude export to Asian markets via Westridge Marine Terminal, Vancouver.' },
+    { name:'Brazil → China', coords:[[-23,-44],[-25,-40],[-30,-35],[-35,-30],[-35,-20],[-20,-10],[0,5],[10,35],[8,60],[5,75],[1,100],[10,110],[22,114]], detail:'Key emerging trade route. Petrobras pre-salt light crude to Chinese refiners and independents (teapots). Growing volumes.' },
+    { name:'Cape of Good Hope Route', coords:[[6.5,3.4],[-5,5],[-15,10],[-25,15],[-35,20],[-40,25],[-35,30],[-20,35],[-10,40],[0,45],[10,55],[15,60],[20,65],[26,57]], detail:'Alternative to Suez Canal route for super-large tankers. Also used when Suez is unavailable. Adds ~10-14 days vs Suez routing.' }
+  ];
+
+  routes.forEach(function(r){
+    L.polyline(r.coords,{color:'#c9a84c',weight:1.6,opacity:0.5,dashArray:'7,5'})
+      .bindPopup(popup('#c9a84c','Tanker Route',r.name,'Global Trade Route',r.detail,null),{className:'oil-popup',maxWidth:300})
+      .addTo(layers.routes);
+  });
+
+  // ══════════════════════════════════════════
+  // ADDITIONAL REFINERIES
+  // ══════════════════════════════════════════
+  var refineries2 = [
+    // EUROPE - GERMANY (16 refineries - most in Europe)
+    { lat:51.0, lng:6.9, name:'Cologne-Wesseling Refinery', country:'Germany', detail:'Shell Rheinland refinery complex in Wesseling near Cologne. One of Germany\'s largest at ~330,000 bpd. Connected to Rotterdam via Rhine pipeline. Processes North Sea and Middle East crude.' },
+    { lat:51.5, lng:6.9, name:'Gelsenkirchen Refinery', country:'Germany', detail:'BP Ruhr Oel refinery. ~105,000 bpd capacity. Processes Urals and North Sea crude via Druzhba and Rotterdam pipelines. Key supply point for German industrial heartland.' },
+    { lat:52.1, lng:14.4, name:'PCK Schwedt Refinery', country:'Germany', detail:'PCK Raffinerie GmbH near Schwedt. ~220,000 bpd. Historically supplied exclusively by Druzhba pipeline from Russia. Now diversifying to Baltic Sea crude via Rostock terminal after sanctions.' },
+    { lat:48.5, lng:8.2, name:'MiRO Karlsruhe Refinery', country:'Germany', detail:'Mineraloelraffinerie Oberrhein — Germany\'s largest single refinery at ~310,000 bpd. Owned by Shell, Esso, Rosneft (share disputed), and Phillips 66. Supplied by South European Pipeline from Marseille.' },
+    { lat:53.1, lng:12.0, name:'Rostock Refinery', country:'Germany', detail:'PCK Rostock oil port and pipeline connection. Strategic Baltic terminal enabling Schwedt refinery to receive non-Russian crude since 2022. Key diversification infrastructure.' },
+    { lat:48.8, lng:9.2, name:'Miro Stuttgart Area', country:'Germany', detail:'Esso/ExxonMobil Böblingen area supply. Connected to MiRO complex. Supplies Baden-Württemberg and Bavaria fuel demand.' },
+
+    // EUROPE - ITALY (11 refineries)
+    { lat:40.8, lng:14.4, name:'Taranto Refinery', country:'Italy', detail:'ENI Taranto refinery. ~90,000 bpd. Mediterranean-facing facility processing Middle East and North African crude. Supplies southern Italy.' },
+    { lat:44.4, lng:8.9, name:'Genoa Refinery', country:'Italy', detail:'ERG ISAB refinery in Genoa. ~100,000 bpd. Connected to Central Europe via pipelines. Processes Mediterranean crude grades.' },
+    { lat:37.5, lng:15.1, name:'ISAB Syracuse Refinery', country:'Italy', detail:'ISAB refinery at Priolo Gargallo, Sicily. ~320,000 bpd — one of Mediterranean\'s largest. Acquired by GOI Energy (backed by Trafigura) after Lukoil forced to divest. Processes Middle East and Russian crude.' },
+    { lat:45.6, lng:12.2, name:'Porto Marghera Refinery', country:'Italy', detail:'ENI Porto Marghera refinery near Venice. ~80,000 bpd. Processes North Sea and Middle East crude. Connected to Trans-Alpine Pipeline (TAL).' },
+    { lat:41.9, lng:12.5, name:'Rome Area Refinery', country:'Italy', detail:'ENI Roma refinery at Fiumicino. Supplies central Italy fuel demand including Fiumicino airport.' },
+
+    // EUROPE - FRANCE
+    { lat:43.4, lng:5.1, name:'Lavera Refinery', country:'France', detail:'TotalEnergies La Mede and Lavera complex near Marseille. ~200,000 bpd combined. Mediterranean entry point for Middle East crude via SPSE pipeline across France. La Mede converted partly to biorefinery.' },
+    { lat:49.5, lng:0.1, name:'Normandy Refinery', country:'France', detail:'ExxonMobil Notre-Dame-de-Gravenchon refinery in Normandy. ~247,000 bpd. Processes North Sea crude. Largest refinery in France. Connected to Paris via pipeline.' },
+    { lat:47.3, lng:-1.5, name:'Donges Refinery', country:'France', detail:'TotalEnergies Donges refinery near St Nazaire. ~220,000 bpd. Atlantic-facing refinery processing West African and North Sea crude. Key fuel supplier for western France.' },
+    { lat:50.7, lng:2.5, name:'Dunkirk Refinery', country:'France', detail:'TotalEnergies Dunkirk refinery. ~140,000 bpd. Northern France facility processing North Sea crude. Close proximity to Belgian and UK refining networks.' },
+
+    // EUROPE - SPAIN (5 Repsol refineries)
+    { lat:37.6, lng:-0.9, name:'Cartagena Refinery', country:'Spain', detail:'Repsol Cartagena refinery. ~220,000 bpd — Spain\'s largest. Mediterranean terminal receiving North African and Middle East crude. Recently upgraded with major coker unit.' },
+    { lat:43.3, lng:-8.4, name:'A Coruna Refinery', country:'Spain', detail:'Repsol A Coruña refinery. ~120,000 bpd. Atlantic-facing refinery processing West African crude. Key supply for northwest Spain and Portugal.' },
+    { lat:43.3, lng:-2.9, name:'Bilbao Refinery', country:'Spain', detail:'Petronor (Repsol) Bilbao refinery. ~220,000 bpd. Largest refinery in northern Spain. Processes North Sea and Middle East crude.' },
+    { lat:39.0, lng:-3.9, name:'Puertollano Refinery', country:'Spain', detail:'Repsol Puertollano refinery. ~100,000 bpd. Inland refinery connected to Mediterranean by pipeline. Petrochemical complex integrated.' },
+    { lat:41.1, lng:1.2, name:'Tarragona Refinery', country:'Spain', detail:'Repsol Tarragona refinery. ~186,000 bpd. Mediterranean refinery processing Middle East and North African crude. Large petrochemical integration.' },
+
+    // EUROPE - BELGIUM / NETHERLANDS
+    { lat:51.2, lng:4.4, name:'Antwerp Refinery', country:'Belgium', detail:'TotalEnergies Antwerp integrated platform. ~350,000 bpd refining plus major petrochemicals. One of Europe\'s largest integrated complexes. Processes North Sea, Middle East and West African crude.' },
+    { lat:51.9, lng:4.3, name:'Pernis Rotterdam', country:'Netherlands', detail:'Shell Pernis refinery — Europe\'s largest at ~404,000 bpd. Connected to all major European pipeline networks. Processes diverse crude slate from Middle East, North Sea, West Africa, and Americas.' },
+    { lat:51.4, lng:4.0, name:'Vlissingen Refinery', country:'Netherlands', detail:'Zeeland Refinery (BP/Total JV). ~160,000 bpd. Processes North Sea and Middle East crude. Connected to Rotterdam and Antwerp refining complex.' },
+
+    // EUROPE - UK
+    { lat:51.5, lng:0.5, name:'Thames Estuary Refineries', country:'United Kingdom', detail:'Shell Shellhaven and Coryton area. Former major refining cluster on Thames. Coryton closed 2012. Remaining infrastructure used for product storage and import.' },
+    { lat:56.0, lng:-3.5, name:'Grangemouth Refinery', country:'United Kingdom', detail:'INEOS Grangemouth refinery in Scotland. ~210,000 bpd. Scotland\'s only refinery. Receives Forties crude via Kinneil terminal. Critical for North Sea crude processing.' },
+    { lat:51.6, lng:-3.0, name:'Milford Haven Refinery', country:'United Kingdom', detail:'Valero Pembroke refinery in Wales. ~270,000 bpd — UK\'s largest. Processes imported crude from West Africa, North Sea, and Americas. Atlantic-facing deep water terminal.' },
+
+    // EUROPE - SCANDINAVIA
+    { lat:57.7, lng:11.9, name:'Gothenburg Refinery', country:'Sweden', detail:'Preem Gothenburg (Ringhals) refinery. ~220,000 bpd. Sweden\'s largest refinery. Processes North Sea crude. Connected to Stockholm via pipeline.' },
+    { lat:59.1, lng:11.4, name:'Slagen Refinery', country:'Norway', detail:'ExxonMobil Slagen refinery near Tønsberg. ~115,000 bpd. Norway\'s main product refinery. Processes Norwegian North Sea crude. Supplies Oslo area market.' },
+    { lat:55.6, lng:12.6, name:'Copenhagen Refinery', country:'Denmark', detail:'Crossbridge Energy (formerly Shell) Copenhagen refinery. ~68,000 bpd. Processes North Sea crude for Danish market.' },
+    { lat:60.4, lng:22.3, name:'Naantali Refinery', country:'Finland', detail:'Neste Naantali refinery. ~58,000 bpd. Part of Neste\'s Finnish refining network. Processes Russian and North Sea crude. Neste is world leader in renewable diesel.' },
+    { lat:60.3, lng:25.0, name:'Porvoo Refinery', country:'Finland', detail:'Neste Porvoo refinery. ~206,000 bpd — Finland\'s largest and most modern. World\'s largest renewable diesel producer. Historically processed Russian Urals crude, now diversifying.' },
+
+    // EUROPE - EASTERN
+    { lat:50.1, lng:14.4, name:'Litvinov Refinery', country:'Czech Republic', detail:'PKN Orlen Litvinov refinery. ~110,000 bpd. Processes Russian Urals via Druzhba pipeline. Czech Republic\'s largest refinery.' },
+    { lat:48.1, lng:17.1, name:'Bratislava Refinery', country:'Slovakia', detail:'MOL Slovnaft Bratislava refinery. ~120,000 bpd. Supplied by Druzhba pipeline. Central European fuel supply hub.' },
+    { lat:47.5, lng:19.1, name:'Budapest Refinery', country:'Hungary', detail:'MOL Budapest Danube refinery. ~165,000 bpd. Hungary\'s main refinery. Supplied by Druzhba pipeline. MOL expanding to reduce Russian crude dependency.' },
+    { lat:51.6, lng:21.8, name:'Plock Refinery', country:'Poland', detail:'PKN Orlen Plock refinery. ~327,000 bpd — Poland\'s largest. Druzhba pipeline supplied. PKN Orlen now diversifying to Baltic Sea crude via Gdansk terminal after Russia sanctions.' },
+    { lat:44.8, lng:20.4, name:'Belgrade NIS Refinery', country:'Serbia', detail:'NIS (Gazprom Neft subsidiary) Pancevo refinery near Belgrade. ~96,000 bpd. Processes Russian Urals and Middle East crude. Serbia\'s main fuel supplier.' },
+    { lat:44.3, lng:28.6, name:'Constanta Refinery', country:'Romania', detail:'Petromidia refinery at Navodari near Constanta. ~100,000 bpd. Romania\'s largest. Black Sea terminal receiving diverse crude slate. Owned by KazMunayGas subsidiary Rompetrol.' },
+    { lat:43.2, lng:27.9, name:'Bourgas Refinery', country:'Bulgaria', detail:'Lukoil Neftochim Bourgas refinery. ~196,000 bpd — Bulgaria\'s only refinery and largest in Southeast Europe. Black Sea terminal. Ownership under review following sanctions pressure.' },
+
+    // RUSSIA - ADDITIONAL
+    { lat:53.2, lng:50.2, name:'Samara Refineries', country:'Russia', detail:'Three Rosneft refineries in Samara Oblast — Kuibyshev, Novokuibyshev, and Syzran. Combined ~570,000 bpd. Key Volga region refining complex processing West Siberian crude.' },
+    { lat:56.9, lng:60.6, name:'Yekaterinburg Refinery', country:'Russia', detail:'Ural region refining complex. Processes West Siberian crude for Ural Federal District domestic market.' },
+    { lat:56.5, lng:84.9, name:'Achinsk Refinery', country:'Russia', detail:'Rosneft Achinsk refinery in Krasnoyarsk Krai. Processes East Siberian crude. Western Siberian feedstock via ESPO spur pipeline.' },
+    { lat:52.3, lng:104.3, name:'Angarsk Refinery', country:'Russia', detail:'Rosneft Angarsk petrochemical company. ~10 Mtpa capacity. One of Russia\'s easternmost major refineries. Historically important for Far East supply.' },
+    { lat:54.3, lng:48.4, name:'Ufa Refineries', country:'Russia', detail:'Three Bashneft (Rosneft) refineries in Ufa, Bashkortostan. Combined ~600,000 bpd — Russia\'s largest refining cluster. Processes Ural crude. Key supplier for Central Russia.' },
+
+    // MIDDLE EAST - ADDITIONAL
+    { lat:21.5, lng:39.2, name:'Jeddah Refinery', country:'Saudi Arabia', detail:'Saudi Aramco Jeddah refinery. ~85,000 bpd. Red Sea coast refinery supplying western Saudi Arabia. Connected to Petroline East-West pipeline.' },
+    { lat:17.3, lng:44.1, name:'Yanbu Refinery', country:'Saudi Arabia', detail:'Saudi Aramco Yanbu (YASREF) refinery. ~400,000 bpd. Red Sea export refinery at terminus of East-West Petroline. Joint venture with Sinopec processing Arab Heavy crude.' },
+    { lat:26.4, lng:50.1, name:'Jubail Refinery', country:'Saudi Arabia', detail:'Saudi Aramco SATORP refinery at Jubail. ~400,000 bpd. Joint venture with TotalEnergies. Processes Arab Heavy crude. Major refined product exporter.' },
+    { lat:23.6, lng:58.5, name:'Muscat Refinery', country:'Oman', detail:'Oman Oil Company ORPIC Muscat refinery. ~106,000 bpd. Processes Oman crude for domestic market and product export.' },
+    { lat:29.3, lng:48.1, name:'Mina Al-Ahmadi Refinery', country:'Kuwait', detail:'KNPC Mina Al-Ahmadi refinery. ~466,000 bpd — Kuwait\'s largest. Processes Kuwait Export Crude. Major refined product exporter to Asia.' },
+
+    // AFRICA - ADDITIONAL
+    { lat:6.5, lng:3.3, name:'Dangote Refinery', country:'Nigeria', detail:'Dangote Petroleum Refinery at Lekki, Lagos. 650,000 bpd — Africa\'s largest and world\'s largest single-train refinery. Owned by Aliko Dangote. Began operations 2024. Transforming Nigeria from refined product importer to self-sufficient.' },
+    { lat:36.8, lng:10.2, name:'Tunis Refinery', country:'Tunisia', detail:'STIR Tunis refinery at Bizerte. ~34,000 bpd. Tunisia\'s only refinery processing domestic and imported crude.' },
+    { lat:32.9, lng:13.2, name:'Zawia Refinery', country:'Libya', detail:'NOC Zawia refinery. ~120,000 bpd. One of Libya\'s two main refineries. Operations disrupted by political instability. Mediterranean-facing.' },
+    { lat:32.1, lng:20.1, name:'Tobruk Refinery', country:'Libya', detail:'NOC Tobruk refinery. ~20,000 bpd. Eastern Libya refinery supplying Cyrenaica region.' },
+    { lat:15.6, lng:32.5, name:'Khartoum Refinery', country:'Sudan', detail:'Khartoum Oil Refinery. ~100,000 bpd. Sudan\'s main refinery processing Sudanese crude and imports.' },
+
+    // ASIA - ADDITIONAL
+    { lat:22.3, lng:114.2, name:'Guangzhou Refinery', country:'China', detail:'CNOOC Huizhou and PetroChina Guangzhou refineries. Combined ~500,000 bpd. Pearl River Delta refining cluster processing West African and Middle East crude.' },
+    { lat:36.1, lng:120.4, name:'Qingdao Refinery', country:'China', detail:'Sinopec Qingdao refinery. ~200,000 bpd. Key import refinery in Shandong province — hub for independent Chinese teapot refiners receiving discounted Iranian and Russian crude.' },
+    { lat:38.9, lng:121.6, name:'Dalian Refinery', country:'China', detail:'PetroChina Dalian refinery. ~410,000 bpd. Major northeastern China refinery receiving ESPO pipeline crude from Russia. Connected to China\'s strategic petroleum reserve at Dalian.' },
+    { lat:30.6, lng:104.1, name:'Chengdu Refinery', country:'China', detail:'PetroChina Chengdu refinery in Sichuan. ~200,000 bpd. Inland refinery serving China\'s southwest. Receives crude via Southwest China Pipeline.' },
+    { lat:13.8, lng:100.5, name:'Bangkok Refinery', country:'Thailand', detail:'Thai Oil (PTT Group) Sriracha refinery. ~275,000 bpd — Thailand\'s largest. Processes Middle East crude. Fully integrated with Map Ta Phut petrochemical complex.' },
+    { lat:10.8, lng:106.7, name:'Ho Chi Minh Refinery', country:'Vietnam', detail:'Binh Son Refining and Petrochemicals Dung Quat refinery. ~148,000 bpd. Vietnam\'s first refinery. Processes Bach Ho domestic crude. Second refinery Nghi Son (200,000 bpd) JV with Kuwait, Idemitsu.' },
+    { lat:3.1, lng:101.7, name:'Port Dickson Refinery', country:'Malaysia', detail:'PETRONAS PRPC and Shell Port Dickson refineries. Combined ~300,000 bpd. Malaysia\'s main refining complex processing Tapis and imported crude.' },
+    { lat:14.1, lng:121.1, name:'Batangas Refinery', country:'Philippines', detail:'Petron Bataan refinery. ~180,000 bpd. Philippines\' largest refinery. Processes Middle East crude. Serves Manila and Luzon fuel demand.' },
+    { lat:37.5, lng:129.1, name:'Ulsan SK Refinery', country:'South Korea', detail:'SK Innovation Ulsan refinery. ~840,000 bpd — one of world\'s largest single-site refineries. Processes predominantly Middle East crude. Major exporter of refined products to Asia.' },
+    { lat:35.5, lng:129.4, name:'S-Oil Onsan Refinery', country:'South Korea', detail:'S-Oil Onsan refinery near Ulsan. ~669,000 bpd. Saudi Aramco is major shareholder. Processes Arab crude grades. Major petrochemical integration.' },
+    { lat:37.4, lng:126.6, name:'GS Caltex Yeosu', country:'South Korea', detail:'GS Caltex Yeosu refinery. ~730,000 bpd. JV between GS Energy and Chevron. Processes Middle East crude. Major lube oil and petrochemical producer.' },
+
+    // AMERICAS - ADDITIONAL
+    { lat:29.3, lng:-94.8, name:'Texas City Refinery', country:'USA', detail:'Marathon Texas City refinery. ~76,000 bpd. Gulf Coast refinery complex. Previously BP Texas City (site of 2005 explosion). Connected to Colonial Pipeline network.' },
+    { lat:30.2, lng:-93.2, name:'Port Arthur Refinery', country:'USA', detail:'TotalEnergies Port Arthur refinery. ~225,000 bpd. Saudi Aramco Port Arthur (MOTIVA) refinery — 607,000 bpd, largest in USA. Major Gulf Coast complex processing Arab Heavy crude.' },
+    { lat:29.8, lng:-93.9, name:'Beaumont Refinery', country:'USA', detail:'ExxonMobil Beaumont refinery. ~369,000 bpd. One of ExxonMobil\'s largest US refineries. Processes WTI and imported crude. Connected to major Gulf Coast pipeline networks.' },
+    { lat:37.8, lng:-122.2, name:'Richmond Refinery', country:'USA', detail:'Chevron Richmond refinery in California. ~245,000 bpd. Largest refinery on US West Coast. Processes ANS Alaska and imported Pacific crude.' },
+    { lat:47.6, lng:-122.4, name:'Anacortes Refinery', country:'USA', detail:'Phillips 66 Ferndale and Shell Puget Sound refineries near Anacortes, Washington. Combined ~230,000 bpd. Process ANS Alaska and Canadian heavy crude via Trans Mountain Pipeline.' },
+    { lat:41.8, lng:-87.6, name:'Chicago Refinery', country:'USA', detail:'BP Whiting refinery near Chicago. ~435,000 bpd — one of USA\'s largest inland refineries. Processes Canadian oil sands crude (WCS). Key Midwest fuel supplier connected to Enbridge pipeline network.' },
+    { lat:29.9, lng:-90.2, name:'Norco Refinery', country:'USA', detail:'Shell Norco refinery and Motiva Convent refinery in Louisiana. Combined ~500,000 bpd. Gulf Coast refining complex. Processes domestic WTI and imported grades.' },
+    { lat:-12.0, lng:-77.1, name:'Lima Refinery', country:'Peru', detail:'Petroperu La Pampilla refinery near Lima. ~102,000 bpd. Peru\'s largest refinery. Processes Amazonian crude via Norperuano pipeline. New Talara refinery (65,000 bpd) recently completed.' },
+    { lat:-33.4, lng:-70.6, name:'Santiago Refinery', country:'Chile', detail:'ENAP Bío-Bío and Aconcagua refineries. Combined ~105,000 bpd. Chile\'s refining network processing imported crude. ENAP is state oil company.' },
+  ];
+
+  refineries2.forEach(function(r){
+    L.marker([r.lat,r.lng],{icon:icon('#3a8fc1',13,'square')})
+      .bindPopup(popup('#3a8fc1','Refinery Hub',r.name,r.country,r.detail,null),{className:'oil-popup',maxWidth:300})
+      .addTo(layers.refineries);
+  });
+
+  // ══════════════════════════════════════════
+  // MAJOR OIL PIPELINES
+  // ══════════════════════════════════════════
+  var pipelines = [
+    // MIDDLE EAST
+    { name:'East-West Petroline (Saudi Arabia)', coords:[[26.6,50.1],[24.7,46.7],[23.0,43.0],[21.5,39.2],[17.3,44.1]], detail:'Saudi Aramco East-West crude oil pipeline. 1,200 km, 5 Mbpd capacity. Runs from Abqaiq in Eastern Province to Yanbu on Red Sea coast. Bypasses Strait of Hormuz. Strategic redundancy pipeline.' },
+    { name:'Abu Dhabi Crude Oil Pipeline (ADCOP)', coords:[[24.5,54.4],[23.5,55.0],[23.0,56.0],[27.1,56.3]], detail:'ADNOC pipeline bypassing Strait of Hormuz. 370 km, 1.5 Mbpd capacity. Runs from Habshan to Fujairah export terminal on Gulf of Oman. Completed 2012 as strategic bypass.' },
+    { name:'Kirkuk-Ceyhan Pipeline', coords:[[35.5,44.4],[36.8,42.5],[37.0,40.0],[36.6,36.2]], detail:'Iraq-Turkey Pipeline. 970 km, 1.6 Mbpd capacity. Carries Iraqi Kurdish and Kirkuk crude from northern Iraq to Ceyhan Mediterranean terminal. Frequently disrupted by sabotage and political disputes.' },
+    { name:'Iraq Strategic Pipeline (south)', coords:[[33.3,44.4],[31.0,46.0],[29.9,48.6]], detail:'Iraq southern pipeline network connecting Baghdad-area fields to Basra Oil Terminal. Carries Basra Light and Heavy crude to Persian Gulf export infrastructure.' },
+    { name:'Saudi Tap-Line (historic)', coords:[[26.6,50.1],[25.0,47.0],[30.0,40.0],[31.8,36.0],[33.5,35.5]], detail:'Trans-Arabian Pipeline (Tapline). Now defunct. Ran from Abqaiq to Sidon, Lebanon (1,700 km). Operated 1950-1990. Historically significant as first cross-country Middle East pipeline.' },
+
+    // BTC AND CAUCASUS
+    { name:'BTC Pipeline (Baku-Tbilisi-Ceyhan)', coords:[[39.9,50.0],[40.4,49.8],[41.7,45.0],[41.7,44.8],[41.0,43.5],[40.5,40.5],[37.1,38.0],[36.6,36.2]], detail:'Baku-Tbilisi-Ceyhan pipeline. 1,768 km, 1.2 Mbpd capacity. Carries Azeri Light crude from ACG field through Georgia to Mediterranean. BP-operated. Opened 2005.' },
+    { name:'CPC Pipeline (Kazakhstan-Russia)', coords:[[48.0,67.0],[47.5,60.0],[46.3,52.0],[46.3,48.0]], detail:'Caspian Pipeline Consortium. 1,510 km, 1.4 Mbpd capacity. Carries Tengiz and Kashagan crude from Kazakhstan to Novorossiysk Black Sea terminal. Major export route for Kazakh crude.' },
+    { name:'BTE/SCP Pipeline', coords:[[39.9,50.0],[40.4,49.8],[41.7,45.0],[41.7,44.8],[41.0,43.5],[41.0,42.0],[41.0,41.0],[41.2,40.0]], detail:'South Caucasus Pipeline (Shah Deniz gas). Runs parallel to BTC. Azerbaijan gas to Turkey and onwards to Europe via TANAP and TAP.' },
+
+    // RUSSIA / FSU
+    { name:'Druzhba Pipeline (main)', coords:[[53.2,50.2],[52.0,47.0],[51.5,44.0],[51.0,40.0],[51.0,35.0],[50.5,30.5],[52.1,14.4]], detail:'Druzhba (Friendship) pipeline — world\'s longest at 5,500 km. Carries Russian Urals crude to Poland, Germany, Czech Republic, Slovakia, and Hungary. Two branches: northern to Poland/Germany, southern to Slovakia/Hungary. ~1.2 Mbpd.' },
+    { name:'Druzhba South Branch', coords:[[51.0,35.0],[49.0,32.0],[48.5,26.0],[47.0,22.0],[48.1,17.1],[47.5,19.1]], detail:'Southern branch of Druzhba pipeline supplying Slovakia, Hungary, Czech Republic, and Croatia via INA pipeline. ~500,000 bpd capacity. Hungary and Slovakia still dependent on this route.' },
+    { name:'ESPO Pipeline (Russia-Pacific)', coords:[[56.0,60.0],[58.0,70.0],[58.0,80.0],[56.0,92.0],[54.3,48.4],[52.3,104.3],[51.0,113.5],[48.5,132.0],[42.8,133.5]], detail:'East Siberia-Pacific Ocean (ESPO) pipeline. 4,857 km, 1.6 Mbpd capacity. Carries East Siberian crude from Taishet to Kozmino Pacific export terminal. Key Russia-Asia export route since 2022.' },
+    { name:'Transneft Baltic Pipeline', coords:[[55.7,37.6],[57.0,34.0],[59.4,28.7],[60.0,25.0],[60.3,24.6]], detail:'Baltic Pipeline System (BPS-2). 1,000 km. Carries Russian crude to Ust-Luga Baltic terminal for export to Europe and Asia. Alternative to Druzhba for western direction exports.' },
+    { name:'Russia Arctic Pipeline (Vankor)', coords:[[67.0,83.0],[63.0,78.0],[60.0,73.0],[57.0,69.0],[56.0,60.0]], detail:'Vankor-Purpe pipeline. 543 km. Connects Rosneft\'s Vankor field in Arctic to main West Siberian trunk pipeline system. ~400,000 bpd capacity.' },
+
+    // NORTH AFRICA
+    { name:'Trans-Mediterranean Pipeline (Algeria-Italy)', coords:[[28.0,2.0],[29.5,5.0],[31.0,8.0],[33.9,10.0],[37.0,11.0],[38.1,13.5],[40.0,14.0],[41.9,12.5]], detail:'Transmed gas pipeline (Enrico Mattei). 2,475 km. Carries Algerian gas through Tunisia and Sicily to mainland Italy. ~30 bcm/year capacity. Also Medgaz pipeline directly to Spain.' },
+    { name:'Sumed Pipeline (Egypt)', coords:[[29.9,32.5],[29.5,31.5],[29.0,31.0],[30.1,31.3]], detail:'SUMED (Suez-Mediterranean) Pipeline. 320 km. Carries crude from Red Sea (Ain Sokhna) to Mediterranean (Sidi Kerir) at Alexandria. 2.5 Mbpd capacity. Bypasses Suez Canal for large tankers.' },
+    { name:'Chad-Cameroon Pipeline', coords:[[12.5,15.0],[9.5,13.5],[6.5,11.0],[4.0,9.5],[3.9,9.7]], detail:'Chad-Cameroon Petroleum Development Pipeline. 1,070 km. Carries Doba Basin crude from Chad to Kribi terminal in Cameroon. ExxonMobil operated. ~225,000 bpd capacity.' },
+    { name:'Niger-Benin Pipeline (WAPCO)', coords:[[17.0,8.5],[14.0,7.0],[11.0,4.5],[9.0,3.5],[6.4,2.4]], detail:'West African Pipeline Company crude oil pipeline. 1,980 km. Carries Agadem Basin crude from Niger to Seme terminal in Benin. China National Petroleum Corporation (CNPC) constructed. Began operations 2024.' },
+
+    // EUROPE PIPELINES
+    { name:'Rotterdam-Rhine Pipeline', coords:[[51.9,4.1],[51.8,5.0],[51.5,6.0],[51.0,6.9],[51.5,6.9]], detail:'Rotterdam-Rhine Pipeline (RRP). 320 km. Carries crude from Rotterdam to German Ruhr refineries at Cologne and Gelsenkirchen. ~35 Mtpa capacity. Key European crude distribution artery.' },
+    { name:'South European Pipeline (SPSE)', coords:[[43.3,5.4],[44.0,5.5],[45.5,5.0],[46.5,5.2],[47.0,6.0],[47.5,7.5],[48.5,8.2]], detail:'South European Pipeline. 775 km. Carries Mediterranean crude from Fos-sur-Mer (Marseille) to Karlsruhe MiRO refinery in Germany. ~35 Mtpa capacity. Key supply for Rhine Valley refineries.' },
+    { name:'Trans-Alpine Pipeline (TAL)', coords:[[45.4,12.3],[46.5,11.5],[47.2,11.0],[47.8,11.4],[48.2,11.6],[48.8,12.0],[48.7,13.5],[50.1,14.4]], detail:'Trans-Alpine Pipeline. 753 km. Carries crude from Trieste (Italy) to Bavaria, Czech Republic, and Austria. ~40 Mtpa capacity. Supplies refineries in Bavaria, Austria, and Czech Republic.' },
+    { name:'Norpipe (North Sea-Germany)', coords:[[56.5,3.0],[55.0,5.0],[53.5,6.5],[53.1,7.0],[53.5,10.0]], detail:'Norpipe crude oil pipeline. 354 km. Carries Ekofisk North Sea crude from Norway to Teesside, UK and Emden, Germany. ~600,000 bpd.' },
+    { name:'Forties Pipeline System (UK)', coords:[[57.5,-1.0],[57.2,-1.5],[56.7,-2.5],[56.0,-3.5]], detail:'Forties Pipeline System. 180 km offshore plus onshore. Carries North Sea crude from Forties field cluster to Kinneil terminal, Scotland. ~450,000 bpd. BP operated. Key North Sea infrastructure.' },
+    { name:'Oseberg Transport System', coords:[[60.5,2.8],[60.8,3.0],[61.0,3.5],[59.9,10.7]], detail:'Norwegian North Sea pipeline network carrying Oseberg crude from offshore fields to Sture terminal near Bergen, Norway. ~600,000 bpd.' },
+    { name:'Langeled Pipeline (Norway-UK)', coords:[[60.5,3.0],[59.0,1.0],[57.5,-0.5],[54.0,-0.2],[53.5,0.0]], detail:'Langeled pipeline. 1,166 km — world\'s longest subsea pipeline. Carries Norwegian gas from Nyhamna to Easington, UK. 70 bcm/year capacity. Key UK gas security infrastructure.' },
+    { name:'PKN Orlen Baltic Pipeline', coords:[[54.4,18.7],[53.5,17.0],[52.5,18.5],[51.6,21.8]], detail:'Pomeranian Pipeline (PERN). Carries Baltic Sea crude imports from Gdansk terminal to Plock refinery in Poland. Enabling Poland to replace Russian Druzhba crude after 2022 sanctions.' },
+
+    // AMERICAS
+    { name:'Trans Mountain Pipeline (Canada)', coords:[[56.7,-111.4],[53.0,-120.0],[51.0,-121.5],[49.3,-123.1]], detail:'Trans Mountain Pipeline. 1,150 km. Carries Alberta oil sands crude (WCS) from Edmonton to Westridge Marine Terminal in Vancouver. Expansion tripled capacity to 890,000 bpd in 2024. Enables Canadian crude export to Asia.' },
+    { name:'Keystone Pipeline System', coords:[[56.7,-111.4],[52.0,-107.0],[49.0,-100.0],[44.0,-97.0],[40.0,-97.0],[29.9,-95.4]], detail:'Keystone Pipeline. 4,324 km. Carries Alberta oil sands crude to US Gulf Coast refineries via Cushing, Oklahoma hub. ~590,000 bpd. TC Energy operated. Keystone XL was cancelled in 2021.' },
+    { name:'Enbridge Mainline (Canada-USA)', coords:[[56.7,-111.4],[53.5,-113.5],[50.0,-101.0],[47.0,-93.0],[44.0,-88.0],[41.8,-87.6]], detail:'Enbridge Mainline crude pipeline system. World\'s longest crude oil and liquids pipeline network. ~3 Mbpd capacity. Carries Canadian oil sands crude to US Midwest refineries including Chicago.' },
+    { name:'Colonial Pipeline (USA East)', coords:[[29.9,-90.1],[32.0,-84.0],[34.0,-80.0],[36.0,-76.0],[38.0,-77.0],[40.0,-74.0],[40.7,-74.0]], detail:'Colonial Pipeline. 8,900 km. Carries refined petroleum products from Gulf Coast to US East Coast. 2.5 Mbpd capacity. Critical US infrastructure — cyberattack in 2021 caused major fuel shortage on East Coast.' },
+    { name:'Trans-Alaska Pipeline (TAPS)', coords:[[70.3,-148.5],[68.0,-149.0],[66.0,-150.0],[64.0,-147.5],[61.2,-149.9],[60.5,-146.4]], detail:'Trans-Alaska Pipeline System. 1,288 km. Carries North Slope crude from Prudhoe Bay to Valdez tanker terminal. ~500,000 bpd. Alyeska Pipeline operated. Completed 1977.' },
+    { name:'Permian Basin Pipelines', coords:[[31.8,-102.3],[29.7,-95.4],[29.9,-90.1]], detail:'Multiple Permian Basin crude gathering and transport pipelines including Gray Oak, EPIC, Cactus II, and Longhorn pipelines. Combined ~5 Mbpd capacity carrying WTI crude from Permian to Corpus Christi and Houston Gulf Coast export terminals.' },
+    { name:'SOTE Pipeline (Ecuador)', coords:[[0.5,-76.5],[-0.5,-77.5],[-1.5,-78.0],[-3.7,-73.2]], detail:'Sistema de Oleoducto Trans-Ecuatoriano. 503 km. Carries Amazon Basin crude from Lago Agrio to Balao Pacific coast terminal. ~360,000 bpd. State-owned Petroecuador operated.' },
+    { name:'Oleoducto Norperuano (Peru)', coords:[[-4.0,-73.5],[-6.0,-76.0],[-8.0,-77.5],[-10.0,-77.5],[-12.0,-77.1]], detail:'Norperuano Pipeline. 1,106 km. Carries crude from Amazon jungle fields to Bayovar Pacific coast terminal. Petroperu operated.' },
+    { name:'Vaca Muerta Export Pipeline', coords:[[-38.5,-69.5],[-37.0,-67.0],[-35.0,-63.0],[-34.6,-58.4]], detail:'Various Neuquén Basin pipelines connecting Vaca Muerta shale to Buenos Aires and Bahia Blanca export infrastructure. Expanding capacity as YPF and partners ramp Vaca Muerta production.' },
+
+    // ASIA
+    { name:'ESPO China Spur (Skovorodino-Daqing)', coords:[[54.0,122.0],[51.0,119.0],[49.0,117.0],[46.0,122.0],[45.0,124.0],[46.5,125.3]], detail:'ESPO China spur pipeline. 998 km. Carries Russian ESPO crude from Skovorodino to Daqing refinery in China. ~600,000 bpd. Key Russia-China crude supply route alongside ESPO Pacific route.' },
+    { name:'Kazakhstan-China Pipeline', coords:[[48.0,67.0],[44.0,73.0],[43.0,76.0],[41.0,80.0],[40.0,86.0],[37.0,75.0],[40.0,116.4]], detail:'Kazakhstan-China Crude Oil Pipeline. 2,228 km. Carries Kazakh crude from Atyrau via Alashankou to Dushanzi refinery in Xinjiang, China. ~400,000 bpd. CNPC and KazMunayGas joint venture.' },
+    { name:'Myanmar-China Pipeline', coords:[[16.5,97.5],[19.0,96.0],[22.0,96.5],[24.0,97.5],[26.0,99.0],[28.0,100.5],[30.0,103.0],[30.6,104.1]], detail:'China-Myanmar crude oil pipeline. 771 km. Carries Middle East crude imported through Kyaukpyu deep sea port in Myanmar to Yunnan province China. ~440,000 bpd. CNPC operated. Bypasses Malacca Strait.' },
+    { name:'India Paradip-Haldia Pipeline', coords:[[20.3,86.6],[22.5,87.5],[22.6,88.4]], detail:'Indian Oil Corporation Paradip-Haldia crude pipeline. Carries crude from Paradip import terminal on Odisha coast to Haldia refinery in West Bengal. Key eastern India crude supply route.' },
+    { name:'VLCC Offloading-Jamnagar Pipeline', coords:[[20.0,68.5],[20.0,70.0],[20.0,73.0]], detail:'Reliance Industries single point mooring to Jamnagar refinery pipeline system. Enables VLCC tankers to offload to world\'s largest refinery complex offshore Gujarat coast.' },
+    { name:'East-West Pipeline India', coords:[[20.0,73.0],[19.0,74.0],[17.0,73.5],[13.0,80.3]], detail:'Indian Oil Corporation cross-country pipeline. Carries crude and petroleum products along western and southern India coast connecting Jamnagar to Chennai refinery network.' },
+    { name:'Sino-Russian Far East Pipeline', coords:[[42.8,133.5],[40.0,129.0],[38.0,126.5],[37.5,126.6]], detail:'ESPO crude pipeline to South Korea (proposed/partial). Pipeline infrastructure enabling Russian ESPO crude deliveries to South Korean and Japanese refineries via tanker from Kozmino terminal.' },
+  ];
+
+  var pipelineStyle = {color:'#e05252', weight:2, opacity:0.65};
+
+  pipelines.forEach(function(p){
+    L.polyline(p.coords, pipelineStyle)
+      .bindPopup(popup('#e05252','Oil Pipeline',p.name,'Pipeline Infrastructure',p.detail,null),{className:'oil-popup',maxWidth:300})
+      .addTo(layers.pipelines);
+  });
+
+  // ══════════════════════════════════════════
+  // COMPREHENSIVE GLOBAL REFINERY DATABASE
+  // ══════════════════════════════════════════
+  var refineries3 = [
+
+    // ── AFRICA ──
+    // Algeria
+    { lat:36.9, lng:6.9, name:'Skikda Refinery (Sonatrach)', country:'Algeria', detail:'Sonatrach Skikda refinery. 356,500 bbl/d — Algeria\'s largest. Also includes 100,000 bbl/d condensate refinery. Key Mediterranean export point.' },
+    { lat:27.9, lng:-0.3, name:'Adrar Refinery (CNPC/Sonatrach)', country:'Algeria', detail:'Joint CNPC and Sonatrach refinery in Adrar. 12,500 bbl/d. Serves remote southwestern Algeria.' },
+    { lat:36.7, lng:3.1, name:'Algiers Refinery (Sonatrach)', country:'Algeria', detail:'Sonatrach Algiers refinery. 72,900 bbl/d. Supplies Algiers capital region fuel demand.' },
+    { lat:35.8, lng:-0.1, name:'Arzew Refinery (Sonatrach)', country:'Algeria', detail:'Sonatrach Arzew refinery. 75,000 bbl/d. Located in major LNG and petroleum export complex on Mediterranean.' },
+
+    // Angola
+    { lat:-8.9, lng:13.2, name:'Luanda Refinery (Sonangol)', country:'Angola', detail:'Sonangol Luanda refinery. 72,000 bbl/d. Opened 1958 — Angola\'s only operational refinery. Upgrading underway. Multiple new refineries under construction to achieve self-sufficiency.' },
+
+    // Cameroon
+    { lat:4.0, lng:9.2, name:'Limbé Refinery (Sonara)', country:'Cameroon', detail:'Sonara Limbé refinery. Formerly 42,000 bbl/d. Severely damaged by fire in May 2019. Refurbishment ongoing since 2021 with target reopening by late 2027.' },
+
+    // Chad
+    { lat:12.1, lng:15.0, name:'Djarmaya Refinery (SEERAT)', country:'Chad', detail:'Société d\'Etude et d\'Exploitation de la Raffinerie Djarmaya refinery. 20,000 bbl/d. Opened June 2011. Chinese-built refinery processing Doba Basin crude.' },
+
+    // Congo
+    { lat:-4.8, lng:11.9, name:'Pointe Noire Refinery (CORAF)', country:'Republic of Congo', detail:'CORAF Pointe Noire refinery. 21,000 bbl/d. Congo\'s only active refinery processing domestic crude.' },
+
+    // Egypt
+    { lat:31.2, lng:29.9, name:'Alexandria Ameriya Refinery (EGPC)', country:'Egypt', detail:'EGPC Alexandria Ameriya refinery. 81,000 bbl/d. Part of Alexandria refining cluster on Mediterranean coast.' },
+    { lat:31.1, lng:29.8, name:'Alexandria El Mex Refinery (EGPC)', country:'Egypt', detail:'EGPC Alexandria El Mex refinery. 117,000 bbl/d. Processes Middle East and domestic Egyptian crude.' },
+    { lat:30.1, lng:31.4, name:'Cairo Mostorod Refinery (EGPC)', country:'Egypt', detail:'EGPC Cairo Mostorod refinery. 142,000 bbl/d. Largest Cairo area refinery. Egyptian Refining Company expanding capacity by additional 100,000 bbl/d.' },
+    { lat:30.3, lng:31.5, name:'El Nasr Refinery (EGPC)', country:'Egypt', detail:'EGPC El Nasr refinery. 132,000 bbl/d. Major Cairo area facility processing Egyptian and imported crude.' },
+    { lat:29.9, lng:32.5, name:'El Suez Refinery (EGPC)', country:'Egypt', detail:'EGPC El Suez refinery. 70,000 bbl/d. Located at Suez Canal entrance. Processes Suez Blend crude.' },
+    { lat:27.2, lng:31.2, name:'Asyut Refinery (EGPC)', country:'Egypt', detail:'EGPC Asyut refinery. 47,000 bbl/d. Upper Egypt inland refinery serving southern fuel demand.' },
+    { lat:30.8, lng:31.0, name:'Tanta Refinery (EGPC)', country:'Egypt', detail:'EGPC Tanta refinery. 35,000 bbl/d. Nile Delta refinery supplying agricultural heartland of Egypt.' },
+
+    // Gabon
+    { lat:-0.7, lng:8.8, name:'Port Gentil Refinery (Sogara)', country:'Gabon', detail:'Sogara Port Gentil refinery. 25,000 bbl/d. Gabon\'s only refinery processing Rabi Light crude.' },
+
+    // Ghana
+    { lat:5.6, lng:-0.0, name:'Tema Oil Refinery (TOR)', country:'Ghana', detail:'Tema Oil Refinery. 45,000 bbl/d. Ghana\'s main existing refinery. Processing imported crude for domestic market.' },
+    { lat:5.7, lng:0.0, name:'Sentuo Oil Refinery (SORL)', country:'Ghana', detail:'Sentuo Oil Refinery Limited. 120,000 bbl/d. New Chinese-backed refinery near Tema. Significantly expanding Ghana\'s refining capacity.' },
+
+    // Ivory Coast
+    { lat:5.3, lng:-4.0, name:'Abidjan Refinery (SIR)', country:'Ivory Coast', detail:'Société Ivoirienne de Raffinage Abidjan refinery. 68,000 bbl/d. West Africa\'s key regional refinery. Processes imported crude for Ivory Coast and landlocked neighbors.' },
+
+    // Kenya
+    { lat:-4.1, lng:39.7, name:'Mombasa Refinery (KPRL)', country:'Kenya', detail:'Kenya Petroleum Refineries Limited Mombasa refinery. 70,000 bbl/d. Kenya\'s only refinery. Processes imported Middle East crude. Supplies East Africa landlocked countries.' },
+
+    // Libya
+    { lat:30.6, lng:20.1, name:'Ra\'s Lanuf Refinery (NOC)', country:'Libya', detail:'NOC Ra\'s Lanuf refinery. 220,000 bbl/d — Libya\'s largest. Located at major oil export terminal. Operations frequently disrupted by political instability.' },
+    { lat:30.4, lng:19.6, name:'El-Brega Refinery (NOC)', country:'Libya', detail:'NOC El-Brega refinery. 10,000 bbl/d. Small facility near major LNG terminal. Processing Sirtica crude.' },
+
+    // Nigeria
+    { lat:10.5, lng:7.4, name:'Kaduna Refinery (NNPC)', country:'Nigeria', detail:'NNPC Kaduna refinery. Formerly 110,000 bbl/d. Presently inactive. Inland refinery serving northern Nigeria.' },
+    { lat:4.8, lng:7.0, name:'Port Harcourt Refinery (NNPC)', country:'Nigeria', detail:'NNPC Port Harcourt refinery. 210,000 bbl/d. Active. Nigeria\'s main operational legacy refinery in Niger Delta.' },
+    { lat:5.5, lng:5.8, name:'Warri Refinery (NNPC)', country:'Nigeria', detail:'NNPC Warri refinery. 125,000 bbl/d. Active. Niger Delta refinery processing bonny light and domestic grades.' },
+    { lat:6.5, lng:3.4, name:'Dangote Refinery (Dangote Group)', country:'Nigeria', detail:'Dangote Petroleum Refinery Lekki Lagos. 650,000 bbl/d — Africa\'s largest and world\'s largest single-train refinery. Began commercial operations September 2024. Planned expansion to 1.4 Mbpd. Transforming Nigeria from fuel importer to self-sufficient.' },
+
+    // South Africa
+    { lat:-29.9, lng:31.0, name:'Engen Refinery (Vivo Energy)', country:'South Africa', detail:'Engen Petroleum Durban refinery. 135,000 bbl/d. Processes imported crude. Key fuel supplier for KwaZulu-Natal province.' },
+    { lat:-29.8, lng:31.0, name:'Sapref Refinery (Shell/BP)', country:'South Africa', detail:'SAPREF Shell and BP joint venture Durban refinery. 180,000 bbl/d. South Africa\'s largest single refinery. Nelson Complexity Index 8.44. Durban harbour receiving imported crude.' },
+    { lat:-26.5, lng:29.1, name:'Sasol Secunda CTL Refinery', country:'South Africa', detail:'Sasol Secunda coal-to-liquids refinery. 300,000 bbl/d crude equivalent. World\'s largest coal-to-liquids plant. Processes local coal into synthetic fuels. Major South African energy security asset.' },
+    { lat:-26.8, lng:27.8, name:'Natref Refinery (Sasol/Prax)', country:'South Africa', detail:'National Petroleum Refiners (Natref) Sasolburg refinery. 108,000 bbl/d. Joint venture between Sasol and Prax. Inland refinery connected to Durban via Petroline pipeline.' },
+    { lat:-34.2, lng:22.1, name:'Mossel Bay GTL Refinery (PetroSA)', country:'South Africa', detail:'PetroSA Mossel Bay gas-to-liquids refinery. 45,000 bbl/d. Converts natural gas from offshore fields to synthetic fuels. Only offshore GTL facility in Africa.' },
+
+    // Sudan
+    { lat:15.6, lng:32.5, name:'El-Obeid Refinery', country:'Sudan', detail:'El Obeid Refinery Company. 15,000 bbl/d. North Kordofan inland refinery serving central Sudan.' },
+
+    // Tunisia
+    { lat:37.3, lng:9.9, name:'Bizerte Refinery (STIR)', country:'Tunisia', detail:'STIR Bizerte refinery. 34,000 bbl/d. Tunisia\'s only refinery. Processes Tunisian and imported crude.' },
+
+    // Zambia
+    { lat:-12.8, lng:28.2, name:'Indeni Petroleum Refinery', country:'Zambia', detail:'Indeni Petroleum Refinery Ndola. 25,000 bbl/d. Zambia\'s only refinery. Landlocked — crude supplied by Tazama pipeline from Dar es Salaam. Supplies copper belt industry.' },
+
+    // ── ASIA ──
+    // Azerbaijan
+    { lat:40.4, lng:49.9, name:'Heydar Aliyev Baku Refinery (SOCAR)', country:'Azerbaijan', detail:'SOCAR Heydar Aliyev Baku Oil Refinery. 160,000 bbl/d. Azerbaijan\'s main refinery processing Azeri Light crude. Connected to BTC pipeline.' },
+
+    // Bahrain
+    { lat:26.1, lng:50.6, name:'Bapco Refinery', country:'Bahrain', detail:'Bahrain Petroleum Company (Bapco) Sitra refinery. 267,000 bbl/d. One of world\'s oldest continuously operating refineries (est. 1936). Processes Saudi crude via undersea pipeline.' },
+
+    // Bangladesh
+    { lat:22.3, lng:91.8, name:'Eastern Refinery (BPC)', country:'Bangladesh', detail:'Bangladesh Petroleum Corporation Eastern Refinery Chittagong. 33,000 bbl/d. Bangladesh\'s only refinery processing imported Middle East crude.' },
+
+    // China - Major refineries
+    { lat:41.9, lng:123.9, name:'Fushun Petrochemical (CNPC)', country:'China', detail:'PetroChina Fushun Petrochemical refinery. 186,000 bbl/d. Historically one of China\'s oldest major refineries. Northeast China. Processes Russian and domestic crude.' },
+    { lat:30.5, lng:117.1, name:'Sinopec Anqing Refinery', country:'China', detail:'Sinopec Anqing Company refinery Anhui Province. 110,000 bbl/d. Yangtze River corridor refinery processing Middle East crude.' },
+    { lat:39.9, lng:116.2, name:'Sinopec Beijing Yanshan Refinery', country:'China', detail:'Sinopec Beijing Yanshan Company refinery. 165,000 bbl/d. Major Beijing area refinery. Petrochemical complex integrated.' },
+    { lat:36.1, lng:103.8, name:'PetroChina Lanzhou Refinery', country:'China', detail:'PetroChina Lanzhou refinery. 112,000 bbl/d. Key western China refinery receiving Kazakhstan crude via pipeline.' },
+    { lat:21.7, lng:110.9, name:'Sinopec Maoming Refinery', country:'China', detail:'Sinopec Maoming Company refinery Guangdong. 265,000 bbl/d. Major southern China refinery processing West African and Middle East crude.' },
+    { lat:38.3, lng:116.8, name:'Sinopec Cangzhou Refinery', country:'China', detail:'Sinopec Cangzhou Company refinery Hebei. 70,000 bbl/d. North China plain refinery near Bohai Bay.' },
+    { lat:46.6, lng:125.1, name:'PetroChina Daqing Petrochemical', country:'China', detail:'PetroChina Daqing Petrochemical refinery. 122,000 bbl/d. Co-located with China\'s largest oilfield. Processes Daqing crude.' },
+    { lat:34.7, lng:112.4, name:'Sinopec Luoyang Refinery', country:'China', detail:'Sinopec Luoyang Company refinery Henan. 100,000 bbl/d. Central China refinery serving landlocked provinces.' },
+    { lat:31.0, lng:112.1, name:'Sinopec Jingmen Refinery', country:'China', detail:'Sinopec Jingmen Company refinery Hubei. 100,000 bbl/d. Middle Yangtze region refinery.' },
+    { lat:30.6, lng:114.3, name:'Sinopec Wuhan Refinery', country:'China', detail:'Sinopec Wuhan Company refinery. 80,000 bbl/d. Central China major city refinery complex.' },
+    { lat:28.1, lng:113.0, name:'Sinopec Changling Refinery', country:'China', detail:'Sinopec CPCC Changling Company refinery Hunan. 100,000 bbl/d. South-central China refinery.' },
+    { lat:32.0, lng:118.8, name:'Sinopec Jinling Refinery', country:'China', detail:'Sinopec Jinling Company refinery Nanjing Jiangsu. 265,000 bbl/d. Major Yangtze Delta refinery. Processes Middle East and West African crude.' },
+    { lat:29.7, lng:116.0, name:'Sinopec Jiujiang Refinery', country:'China', detail:'Sinopec Jiujiang Company refinery Jiangxi. 98,000 bbl/d. Yangtze River refinery complex.' },
+    { lat:43.8, lng:126.5, name:'PetroChina Jilin Chemical Refinery', country:'China', detail:'PetroChina Jilin Chemical refinery. 115,000 bbl/d. Northeast China petrochemical hub processing domestic crude.' },
+    { lat:39.0, lng:122.5, name:'PetroChina Jinxi Refinery', country:'China', detail:'PetroChina Jinxi refinery Liaoning. 112,000 bbl/d. Northeast China refinery processing Russian ESPO and domestic crude.' },
+    { lat:41.1, lng:121.1, name:'PetroChina Jinzhou Petrochemical', country:'China', detail:'PetroChina Jinzhou Petrochemical refinery Liaoning. 112,000 bbl/d. Northeast China coastal refinery.' },
+    { lat:36.7, lng:117.0, name:'Sinopec Qilu Refinery', country:'China', detail:'Sinopec Qilu Company refinery Shandong. 195,000 bbl/d. Major Shandong Province refinery.' },
+    { lat:31.4, lng:121.5, name:'Sinopec Shanghai Gaoqiao Refinery', country:'China', detail:'Sinopec Shanghai Gaoqiao Oil Refinery. 220,000 bbl/d. Major Shanghai area refinery in Pudong district.' },
+    { lat:39.1, lng:117.2, name:'Sinopec Tianjin Refinery', country:'China', detail:'Sinopec Tianjin Company refinery. 100,000 bbl/d. Northern port city refinery receiving imported crude via Tianjin harbour.' },
+    { lat:44.0, lng:85.0, name:'PetroChina Dushanzi Refinery', country:'China', detail:'PetroChina Dushanzi refinery Xinjiang. 120,000 bbl/d. Receives Kazakhstan crude via Kazakhstan-China pipeline. Western China supply hub.' },
+    { lat:43.8, lng:87.6, name:'PetroChina Urumqi Petrochemical', country:'China', detail:'PetroChina Ürümqi Petrochemical refinery. 101,000 bbl/d. Xinjiang province. Processes Kazakhstan imported and domestic Xinjiang crude.' },
+    { lat:29.9, lng:121.7, name:'Sinopec Zhenhai Refinery', country:'China', detail:'Sinopec Zhenhai refinery Zhoushan Ningbo Zhejiang. 345,000 bbl/d — one of China\'s largest. Major import refinery receiving VLCC tankers at Zhoushan deepwater terminal.' },
+
+    // India - comprehensive
+    { lat:26.5, lng:90.6, name:'Bongaigaon Refinery (IOCL)', country:'India', detail:'Indian Oil Corporation Bongaigaon refinery Assam. 2.35 million tonnes per year. Processes northeast India domestic crude.' },
+    { lat:27.5, lng:95.4, name:'Digboi Refinery (IOCL)', country:'India', detail:'Indian Oil Corporation Digboi refinery Assam. India\'s oldest refinery (1901). 0.62 million tonnes per year. Historic significance as Asia\'s first oil field.' },
+    { lat:26.2, lng:91.7, name:'Guwahati Refinery (IOCL)', country:'India', detail:'Indian Oil Corporation Guwahati Noonmati refinery. 1.0 million tonnes per year. Serves northeast India market.' },
+    { lat:26.5, lng:93.7, name:'Numaligarh Refinery (NRL)', country:'India', detail:'Numaligarh Refinery Limited Golaghat Assam. 3.0 million tonnes per year. Being expanded to 9 million tonnes. Processes northeast domestic crude.' },
+    { lat:25.5, lng:85.9, name:'Barauni Refinery (IOCL)', country:'India', detail:'Indian Oil Corporation Barauni refinery Bihar. 6.0 million tonnes per year. Nelson Complexity Index 7.8. Processes imported and domestic crude via pipelines.' },
+    { lat:22.4, lng:69.8, name:'Nayara Refinery (Rosneft)', country:'India', detail:'Nayara Energy (Rosneft-backed) Vadinar refinery Gujarat. 406,000 bbl/d. Nelson Complexity Index 12.8. Processes Iranian and discounted Russian crude. VLCC capable deepwater terminal.' },
+    { lat:22.3, lng:73.2, name:'Gujarat Refinery (IOCL)', country:'India', detail:'Indian Oil Corporation Gujarat refinery Vadodara. Nelson Complexity Index 10.0. Major western India refinery complex.' },
+    { lat:15.9, lng:74.5, name:'Mangalore Refinery (MRPL)', country:'India', detail:'Mangalore Refinery and Petrochemicals Limited. 199,000 bbl/d. Nelson Complexity Index 10.6. Karnataka coast refinery processing Middle East crude.' },
+    { lat:24.3, lng:75.6, name:'Bina Refinery (BORL)', country:'India', detail:'Bharat Oman Refineries Limited Bina Madhya Pradesh. 116,000 bbl/d. Inland refinery joint venture with Oman Oil Company.' },
+    { lat:30.2, lng:74.9, name:'Guru Gobind Singh Refinery (HMEL)', country:'India', detail:'HPCL-Mittal Energy Limited Bathinda Punjab. 230,000 bbl/d. Nelson Complexity Index 12.6. North India major refinery connected to Mundra via pipeline.' },
+    { lat:20.1, lng:86.5, name:'Paradip Refinery (IOCL)', country:'India', detail:'Indian Oil Corporation Paradip refinery Odisha. 303,000 bbl/d. Nelson Complexity Index 12.2. IOCL\'s newest and largest refinery. East coast import terminal.' },
+    { lat:25.9, lng:76.6, name:'Barmer Refinery (HPCL)', country:'India', detail:'HPCL Rajasthan Refinery Barmer. 208,000 bbl/d. New refinery processing Barmer Basin domestic crude. Connected to Rajasthan oilfields.' },
+    { lat:27.5, lng:77.7, name:'Mathura Refinery (IOCL)', country:'India', detail:'Indian Oil Corporation Mathura refinery Uttar Pradesh. 156,000 bbl/d. Supplies Delhi NCR and UP market. Historically controversial near Taj Mahal.' },
+    { lat:19.1, lng:72.8, name:'Mumbai Refinery (HPCL)', country:'India', detail:'HPCL Mumbai refinery Mahul. 107,000 bbl/d. Supplies Mumbai metropolitan area. Receives crude at Jawahar Dweep offshore terminal.' },
+    { lat:19.0, lng:72.9, name:'Mumbai Mahul Refinery (BPCL)', country:'India', detail:'BPCL Mumbai Mahaul refinery. 135,000 bbl/d. Major Mumbai area refinery with petrochemical integration.' },
+    { lat:17.7, lng:83.3, name:'Visakhapatnam Refinery (HPCL)', country:'India', detail:'HPCL Visakhapatnam refinery Andhra Pradesh. 150,000 bbl/d. East coast refinery processing Middle East crude. Expanding to 500,000 bbl/d.' },
+    { lat:9.9, lng:76.3, name:'Kochi Refinery (BPCL)', country:'India', detail:'BPCL Kochi refinery Kerala. 310,000 bbl/d. Nelson Complexity Index 10.8. South India key refinery. Receives crude at SBM terminal.' },
+    { lat:13.1, lng:80.2, name:'Manali Refinery (CPCL)', country:'India', detail:'Chennai Petroleum Corporation Manali Chennai. 185,000 bbl/d. South India key refinery. Processes Middle East crude via Chennai port.' },
+    { lat:11.8, lng:79.7, name:'Cuddalore Refinery (NOCL)', country:'India', detail:'Nagarjuna Oil Corporation Cuddalore Tamil Nadu. 125,000 bbl/d. Greenfield east coast refinery.' },
+
+    // Indonesia
+    { lat:1.7, lng:101.4, name:'Dumai Refinery (Pertamina)', country:'Indonesia', detail:'Pertamina Dumai refinery Riau Sumatra. 170,000 bbl/d. Key Sumatra refinery receiving Minas and Duri crude.' },
+    { lat:-2.9, lng:104.7, name:'Plaju Refinery (Pertamina)', country:'Indonesia', detail:'Pertamina Plaju refinery South Sumatra Palembang. 126,000 bbl/d. One of Indonesia\'s oldest refineries.' },
+    { lat:-7.7, lng:109.0, name:'Cilacap Refinery (Pertamina)', country:'Indonesia', detail:'Pertamina Cilacap refinery Central Java. 348,000 bbl/d — Indonesia\'s largest. Processes imported and domestic crude. Key Java supply point.' },
+    { lat:-1.3, lng:116.8, name:'Balikpapan Refinery (Pertamina)', country:'Indonesia', detail:'Pertamina Balikpapan refinery East Kalimantan. 360,000 bbl/d. Processes Kalimantan domestic crude. Major eastern Indonesia fuel hub.' },
+    { lat:-6.3, lng:108.3, name:'Balongan Refinery (Pertamina)', country:'Indonesia', detail:'Pertamina Balongan refinery West Java Indramayu. 150,000 bbl/d. Receives Minas crude. Supplies Jakarta metropolitan area.' },
+
+    // Iran
+    { lat:30.4, lng:48.3, name:'Abadan Refinery (NIODC)', country:'Iran', detail:'NIODC Abadan refinery Khuzestan. 450,000 bbl/d. World\'s largest refinery when built in 1913. Historically pivotal in Iranian oil industry nationalization 1951. Rebuilt after Iran-Iraq War damage.' },
+    { lat:30.4, lng:49.1, name:'Arvand Refinery (NIODC)', country:'Iran', detail:'NIODC Arvand Oil Refinery Khuzestan. 120,000 bbl/d. Near Abadan. Processes southwestern Iran heavy crude.' },
+    { lat:34.1, lng:49.7, name:'Arak Refinery (NIODC)', country:'Iran', detail:'NIODC Arak refinery Markazi Province. 250,000 bbl/d. Central Iran refinery. Connected to Iranian national pipeline grid.' },
+    { lat:35.7, lng:51.4, name:'Tehran Refinery (NIODC)', country:'Iran', detail:'NIODC Tehran refinery. 225,000 bbl/d. Supplies Iranian capital. Located in Shahr-e Rey south of Tehran.' },
+    { lat:32.7, lng:51.7, name:'Isfahan Refinery (NIODC)', country:'Iran', detail:'NIODC Isfahan refinery. 375,000 bbl/d. Iran\'s largest capacity refinery. Processes heavy Iranian crude grades.' },
+    { lat:38.1, lng:46.3, name:'Tabriz Refinery (NIODC)', country:'Iran', detail:'NIODC Tabriz refinery East Azerbaijan. 112,000 bbl/d. Northwest Iran refinery serving Azerbaijan and Kurdish regions.' },
+    { lat:29.6, lng:52.5, name:'Shiraz Refinery (NIODC)', country:'Iran', detail:'NIODC Shiraz refinery Fars Province. 40,000 bbl/d. Southwest Iran refinery.' },
+    { lat:27.4, lng:53.7, name:'Bandar Abbas Refinery (NIODC)', country:'Iran', detail:'NIODC Bandar Abbas refinery Hormozgan. 350,000 bbl/d. Strategic Persian Gulf refinery near Strait of Hormuz. Exports refined products.' },
+    { lat:27.2, lng:56.3, name:'Persian Gulf Star Refinery (NIODC)', country:'Iran', detail:'NIODC Persian Gulf Star Oil Refinery Bandar Abbas. 360,000 bbl/d. World\'s largest gas condensate refinery. Processes South Pars condensate. Reduces Iran\'s gasoline import dependency.' },
+    { lat:34.3, lng:46.9, name:'Kermanshah Refinery (NIODC)', country:'Iran', detail:'NIODC Kermanshah refinery. 25,000 bbl/d. Western Iran refinery near Iraq border.' },
+
+    // Iraq
+    { lat:30.5, lng:47.8, name:'Basrah Refinery (INOC)', country:'Iraq', detail:'Iraq National Oil Company Basrah refinery. 210,000 bbl/d. Southern Iraq refinery processing Basra Light crude near major export terminals.' },
+    { lat:33.3, lng:44.4, name:'Daurah Refinery (INOC)', country:'Iraq', detail:'Iraq National Oil Company Daurah refinery Baghdad. 180,000 bbl/d. Capital city refinery supplying Baghdad fuel demand.' },
+    { lat:35.5, lng:44.4, name:'Kirkuk Refinery (INOC)', country:'Iraq', detail:'Iraq National Oil Company Kirkuk refinery. 170,000 bbl/d. Northern Iraq refinery processing Kirkuk crude.' },
+    { lat:34.9, lng:43.5, name:'Baiji North Refinery (INOC)', country:'Iraq', detail:'Iraq National Oil Company Baiji North Refinery Salah ad-Din. 150,000 bbl/d. Iraq\'s largest refinery. Severely damaged during ISIS occupation 2014-15. Rebuilding ongoing.' },
+    { lat:36.2, lng:44.4, name:'Erbil Refinery (KAR Group)', country:'Iraq', detail:'KAR Group Erbil refinery Kurdistan Region. 100,000 bbl/d. Private Kurdistan Regional Government refinery processing domestic Kurdish crude.' },
+    { lat:32.6, lng:44.1, name:'Karbala Refinery (SOC)', country:'Iraq', detail:'South Oil Company Karbala refinery. 150,000 bbl/d. New refinery being developed to increase domestic fuel self-sufficiency.' },
+
+    // Israel
+    { lat:31.8, lng:34.6, name:'Ashdod Oil Refineries (Paz)', country:'Israel', detail:'Paz Oil Company Ashdod refinery. 108,000 bbl/d. Israel\'s southern refinery on Mediterranean coast.' },
+    { lat:32.8, lng:35.0, name:'Haifa Refinery (BAZAN)', country:'Israel', detail:'BAZAN Group Haifa refinery. 197,000 bbl/d. Israel\'s largest refinery. Processes Caspian and Mediterranean crude.' },
+
+    // Japan - comprehensive
+    { lat:35.6, lng:140.1, name:'Chiba Refinery (Cosmo Oil)', country:'Japan', detail:'Cosmo Oil Chiba refinery. 240,000 bbl/d. Tokyo Bay refinery complex processing Middle East crude.' },
+    { lat:34.9, lng:136.6, name:'Yokkaichi Refinery (Cosmo Oil)', country:'Japan', detail:'Cosmo Oil Yokkaichi refinery Mie Prefecture. 175,000 bbl/d. Central Honshu refinery.' },
+    { lat:42.3, lng:140.9, name:'Muroran Refinery (ENEOS)', country:'Japan', detail:'ENEOS Muroran refinery Hokkaido. 180,000 bbl/d. Hokkaido major refinery processing Middle East crude.' },
+    { lat:38.3, lng:141.0, name:'Sendai Refinery (ENEOS)', country:'Japan', detail:'ENEOS Sendai refinery Miyagi. 145,000 bbl/d. Tohoku region major refinery.' },
+    { lat:35.4, lng:139.7, name:'Negishi Yokohama Refinery (ENEOS)', country:'Japan', detail:'ENEOS Negishi Yokohama refinery Kanagawa. 340,000 bbl/d. Japan\'s largest single refinery. Tokyo Bay complex.' },
+    { lat:34.5, lng:133.8, name:'Mizushima Refinery (ENEOS)', country:'Japan', detail:'ENEOS Mizushima refinery Kurashiki Okayama. 250,000 bbl/d. Major Seto Inland Sea refinery complex.' },
+    { lat:34.1, lng:131.5, name:'Marifu Refinery (ENEOS)', country:'Japan', detail:'ENEOS Marifu refinery Yamaguchi. 127,000 bbl/d. Western Honshu refinery.' },
+    { lat:35.5, lng:139.8, name:'Kawasaki Refinery (ENEOS)', country:'Japan', detail:'ENEOS Kawasaki refinery Kanagawa. 335,000 bbl/d. Major Tokyo Bay refinery complex.' },
+    { lat:35.6, lng:140.2, name:'Sodegaura Refinery (Fuji Oil)', country:'Japan', detail:'Fuji Oil Company Sodegaura refinery Chiba. 192,000 bbl/d. Tokyo Bay major refinery.' },
+    { lat:35.9, lng:140.7, name:'Kashima Refinery (Kashima Oil)', country:'Japan', detail:'Kashima Oil Company Ibaraki. 210,000 bbl/d. Major Pacific coast refinery.' },
+    { lat:43.1, lng:141.3, name:'Hokkaido Refinery (Idemitsu)', country:'Japan', detail:'Idemitsu Kosan Hokkaido refinery Tomakomai. 140,000 bbl/d. Northern Japan refinery processing Middle East crude.' },
+    { lat:35.6, lng:140.1, name:'Chiba Refinery (Idemitsu)', country:'Japan', detail:'Idemitsu Kosan Chiba refinery. 220,000 bbl/d. Major Tokyo Bay area refinery.' },
+    { lat:34.9, lng:137.1, name:'Aichi Refinery (Idemitsu)', country:'Japan', detail:'Idemitsu Kosan Aichi refinery Nagoya Bay. 160,000 bbl/d. Central Japan major refinery.' },
+    { lat:34.9, lng:136.6, name:'Showa Yokkaichi Refinery (Shell)', country:'Japan', detail:'Showa Yokkaichi Shell refinery Mie. 210,000 bbl/d. Major central Japan refinery complex.' },
+
+    // Jordan
+    { lat:32.1, lng:36.1, name:'Zarqa Refinery (Jordan)', country:'Jordan', detail:'Jordan Petroleum Refinery Company Zarqa refinery. 90,000 bbl/d. Jordan\'s only refinery. Imports all crude via Aqaba port.' },
+
+    // Kazakhstan
+    { lat:47.1, lng:51.9, name:'Atyrau Refinery (KazMunayGas)', country:'Kazakhstan', detail:'KazMunayGas Atyrau refinery. 104,400 bbl/d. Caspian coast refinery processing Tengiz and Kashagan crude.' },
+    { lat:52.3, lng:76.9, name:'Pavlodar Refinery (KazMunayGas)', country:'Kazakhstan', detail:'KazMunayGas Pavlodar refinery. 162,600 bbl/d. Northern Kazakhstan refinery historically supplied by Russian crude via pipeline.' },
+    { lat:42.3, lng:69.6, name:'Shymkent Refinery (PetroKazakhstan)', country:'Kazakhstan', detail:'PetroKazakhstan Shymkent refinery. 160,000 bbl/d. Southern Kazakhstan refinery. Supplied via Kazakhstan-China pipeline area.' },
+
+    // Kuwait
+    { lat:28.7, lng:48.1, name:'Al Zour Refinery (KNPC)', country:'Kuwait', detail:'Kuwait National Petroleum Company Al Zour refinery. 615,000 bbl/d — Kuwait\'s newest and one of world\'s largest. Completed 2022. Processes Kuwait Export Crude with high complexity.' },
+    { lat:29.1, lng:48.1, name:'Mina Abdullah Refinery (KNPC)', country:'Kuwait', detail:'Kuwait National Petroleum Company Mina Abdullah refinery. 270,000 bbl/d. Processes Kuwait crude for domestic market and product exports.' },
+
+    // Malaysia
+    { lat:1.4, lng:104.1, name:'PRefChem Pengerang Refinery', country:'Malaysia', detail:'Pengerang Refining Company Johor. 300,000 bbl/d. Joint venture Petronas and Saudi Aramco. Nelson Complexity Index 9.5. Part of massive RAPID integrated complex.' },
+    { lat:2.2, lng:102.3, name:'MRCSB Melaka Refinery (Petronas)', country:'Malaysia', detail:'Malaysian Refining Company Melaka. 300,000 bbl/d. Petronas flagship refinery. Processes Middle East crude for domestic market and regional export.' },
+    { lat:5.4, lng:103.1, name:'Petronas Terengganu Refinery', country:'Malaysia', detail:'Petronas Penapisan Terengganu Kerteh refinery. 124,000 bbl/d. Processes Malaysian Tapis crude and condensates.' },
+    { lat:2.5, lng:101.8, name:'Hengyuan Port Dickson Refinery', country:'Malaysia', detail:'Hengyuan Refining Company (formerly Shell) Port Dickson. 156,000 bbl/d. Processes Middle East crude. Chinese-owned since 2016.' },
+
+    // Oman
+    { lat:23.6, lng:58.5, name:'Mina Al Fahal Refinery (OQ)', country:'Oman', detail:'OQ (formerly Oman Oil) Mina Al Fahal refinery Muscat. 106,000 bbl/d. Oman\'s main refinery supplying domestic fuel demand.' },
+    { lat:24.4, lng:56.7, name:'Duqm Refinery (OQ8)', country:'Oman', detail:'OQ8 joint venture Duqm refinery. 230,000 bbl/d. New world-class refinery on Arabian Sea at Duqm special economic zone. Processes Oman and imported crude.' },
+
+    // Pakistan
+    { lat:30.1, lng:71.2, name:'PARCO Refinery (Muzaffargarh)', country:'Pakistan', detail:'Pak-Arab Refinery Muzaffargarh Punjab. 120,000 bbl/d. Pakistan\'s largest refinery. Joint venture with Abu Dhabi. Connected to Pakistan White Oil Pipeline.' },
+    { lat:24.9, lng:67.1, name:'National Refinery (NRL)', country:'Pakistan', detail:'National Refinery Korangi Karachi. 64,000 bbl/d. Pakistan\'s lube oil specialist refinery.' },
+    { lat:33.6, lng:73.1, name:'Attock Refinery (ARL)', country:'Pakistan', detail:'Attock Refinery Rawalpindi. 53,400 bbl/d. Processes Potwar Basin domestic crude. Pakistan\'s oldest private refinery.' },
+    { lat:25.4, lng:66.7, name:'Byco Petroleum (Hub)', country:'Pakistan', detail:'Byco Petroleum Hub Baluchistan. 150,000 bbl/d. Pakistan\'s newest refinery on Arabian Sea coast. Receives VLCC tankers.' },
+
+    // Qatar
+    { lat:25.0, lng:51.6, name:'Um Said Refinery (QP)', country:'Qatar', detail:'QatarEnergy Um Said refinery. 147,000 bbl/d. Qatar\'s main crude oil refinery in Mesaieed Industrial City.' },
+    { lat:25.0, lng:51.5, name:'Laffan Refinery 1 & 2 (QatarEnergy)', country:'Qatar', detail:'QatarEnergy Laffan condensate refineries. 292,000 bbl/d combined. World\'s largest condensate refineries processing North Field condensate. Joint ventures with ExxonMobil, TotalEnergies, Idemitsu, Cosmo, Mitsui, Marubeni.' },
+
+    // Russia Asia
+    { lat:56.3, lng:73.4, name:'Omsk Refinery (Gazprom Neft)', country:'Russia', detail:'Gazprom Neft Omsk refinery. 362,000 bbl/d — Russia\'s largest single refinery. Processes West Siberian crude. One of world\'s most modern refinery complexes.' },
+    { lat:58.2, lng:68.3, name:'Tobolsk Petrochemical (Sibur)', country:'Russia', detail:'Sibur Tobolsk Petrochemical refinery. 138,000 bbl/d. Major West Siberia petrochemical hub processing associated gas and condensates.' },
+    { lat:57.7, lng:86.0, name:'Achinsk Refinery (Rosneft)', country:'Russia', detail:'Rosneft Achinsk refinery Krasnoyarsk Krai. 129,000 bbl/d. West-Central Siberian refinery. Supplies vast Russian Siberian region.' },
+    { lat:52.3, lng:104.3, name:'Angarsk Refinery (Rosneft)', country:'Russia', detail:'Rosneft Angarsk Petrochemical refinery Irkutsk Oblast. 194,000 bbl/d. One of Russia\'s easternmost major refineries. Historically key for Far East supply.' },
+    { lat:48.5, lng:135.1, name:'Khabarovsk Refinery', country:'Russia', detail:'Khabarovsk refinery Russian Far East. 86,000 bbl/d. Supplies Russian Far East fuel demand. Receives ESPO crude via pipeline spur.' },
+    { lat:50.5, lng:137.0, name:'Komsomolsk Refinery (Rosneft)', country:'Russia', detail:'Rosneft Komsomolsk-on-Amur refinery. 143,000 bbl/d. Russian Far East refinery. Key supply point for Khabarovsk and Sakhalin regions.' },
+
+    // Saudi Arabia
+    { lat:24.7, lng:46.7, name:'Riyadh Refinery (Saudi Aramco)', country:'Saudi Arabia', detail:'Saudi Aramco Riyadh refinery. 120,000 bbl/d. Supplies Saudi capital. Connected to Petroline East-West pipeline.' },
+    { lat:22.8, lng:39.1, name:'Rabigh Refinery (Aramco/Sumitomo)', country:'Saudi Arabia', detail:'Saudi Aramco and Sumitomo Rabigh refinery. 400,000 bbl/d. Red Sea coast integrated refining and petrochemical complex. Joint venture PetroRabigh.' },
+    { lat:26.7, lng:50.2, name:'Ras Tanura Refinery (Saudi Aramco)', country:'Saudi Arabia', detail:'Saudi Aramco Ras Tanura refinery. 550,000 bbl/d. Co-located with world\'s largest export terminal. Processes Arab Light crude.' },
+    { lat:24.1, lng:38.1, name:'Yanbu Refinery (Saudi Aramco)', country:'Saudi Arabia', detail:'Saudi Aramco Yanbu refinery. 225,000 bbl/d. Red Sea export refinery at Petroline terminus.' },
+    { lat:24.1, lng:38.2, name:'SAMREF Yanbu (Aramco/ExxonMobil)', country:'Saudi Arabia', detail:'Saudi Aramco ExxonMobil SAMREF Yanbu refinery. 400,000 bbl/d. Major Red Sea joint venture refinery processing Arab Heavy crude.' },
+    { lat:24.1, lng:38.3, name:'YASREF Yanbu (Aramco/Sinopec)', country:'Saudi Arabia', detail:'Saudi Aramco Sinopec YASREF Yanbu refinery. 400,000 bbl/d. Joint venture processing Arab Heavy crude into transportation fuels and petrochemicals.' },
+    { lat:27.0, lng:49.7, name:'SATORP Jubail (Aramco/Total)', country:'Saudi Arabia', detail:'Saudi Aramco TotalEnergies SATORP Jubail refinery. 465,000 bbl/d. World-class joint venture processing Arab Heavy crude. Key product exporter to Asia.' },
+    { lat:27.0, lng:49.6, name:'SASREF Jubail (Saudi Aramco)', country:'Saudi Arabia', detail:'Saudi Aramco SASREF Jubail refinery. 305,000 bbl/d. Large Jubail Industrial City refinery in joint venture with Shell. Processes Arab Heavy crude.' },
+    { lat:16.9, lng:42.6, name:'Jazan Refinery (Saudi Aramco)', country:'Saudi Arabia', detail:'Saudi Aramco Jazan refinery. 400,000 bbl/d. New Red Sea coast refinery in Jazan Economic City. Massive integrated refinery and petrochemical complex.' },
+
+    // Singapore
+    { lat:1.3, lng:103.7, name:'ExxonMobil Jurong Refinery', country:'Singapore', detail:'ExxonMobil Jurong Island refinery Singapore. 605,000 bbl/d. One of world\'s most complex refineries. Nelson Complexity Index among highest globally. Integrated petrochemical complex.' },
+    { lat:1.2, lng:103.8, name:'Shell Pulau Bukom Refinery', country:'Singapore', detail:'Royal Dutch Shell Pulau Bukom refinery Singapore. 500,000 bbl/d. Shell\'s largest refinery globally. Integrated petrochemical and lubes complex. Key Asian hub.' },
+
+    // South Korea
+    { lat:35.5, lng:129.3, name:'Hyundai Oilbank Daesan Refinery', country:'South Korea', detail:'Hyundai Oilbank Daesan refinery South Chungcheong. 561,000 bbl/d. Fourth largest Korean refinery. Integrated with major petrochemical complex.' },
+    { lat:37.5, lng:126.6, name:'SK Incheon Petrochem', country:'South Korea', detail:'SK Innovation Incheon Petrochem refinery. 275,000 bbl/d. Near Seoul capital. Processes Middle East crude for metropolitan area.' },
+
+    // Taiwan
+    { lat:22.5, lng:120.4, name:'Dalin Refinery (CPC)', country:'Taiwan', detail:'CPC Corporation Dalin Kaohsiung refinery Taiwan. 100,000 bbl/d. Processes Middle East crude for Taiwan domestic market.' },
+    { lat:23.8, lng:120.5, name:'Mailiao Refinery (Formosa Plastics)', country:'Taiwan', detail:'Formosa Plastics Corporation Mailiao refinery Yunlin. 540,000 bbl/d. Taiwan\'s largest refinery. One of world\'s most complex integrated petrochemical and refinery complexes.' },
+    { lat:25.0, lng:121.2, name:'Taoyuan Refinery (CPC)', country:'Taiwan', detail:'CPC Corporation Taoyuan refinery. 200,000 bbl/d. Supplies northern Taiwan including Taipei metropolitan area.' },
+
+    // Thailand
+    { lat:13.1, lng:100.9, name:'Thai Oil Sriracha Refinery', country:'Thailand', detail:'Thai Oil Company PTT Sriracha refinery Chonburi. 275,000 bbl/d. Thailand\'s largest refinery. Processes Middle East crude.' },
+    { lat:12.7, lng:101.1, name:'IRPC Refinery (PTT)', country:'Thailand', detail:'IRPC PLC PTT Rayong refinery. 215,000 bbl/d. Integrated refinery and petrochemical complex on eastern seaboard.' },
+    { lat:13.1, lng:101.0, name:'PTT Global Chemical Refinery', country:'Thailand', detail:'PTT Global Chemical Rayong refinery. 280,000 bbl/d. Major Thailand integrated refinery processing Middle East crude.' },
+    { lat:13.7, lng:100.6, name:'Bangchak Refinery', country:'Thailand', detail:'Bangchak Petroleum Bangkok refinery. 120,000 bbl/d. Bangkok area refinery. Committed to renewable energy transition including biofuels.' },
+
+    // Turkey
+    { lat:38.5, lng:26.9, name:'STAR Refinery (SOCAR)', country:'Turkey', detail:'SOCAR Turkey STAR Refinery Aliaga Izmir. 214,000 bbl/d. Operating since 2018. Azerbaijan state company investment. Reduces Turkey\'s refined product import dependency.' },
+    { lat:39.8, lng:32.9, name:'Kirikkale Refinery (Tupras)', country:'Turkey', detail:'Tüpraş Kirikkale refinery Ankara area. 112,500 bbl/d. Supplies Turkish capital Ankara fuel demand.' },
+    { lat:40.8, lng:29.9, name:'Izmit Refinery (Tupras)', country:'Turkey', detail:'Tüpraş Izmit refinery Kocaeli. 226,000 bbl/d. Turkey\'s largest refinery. Istanbul area. Processes Black Sea and Mediterranean crude.' },
+    { lat:38.8, lng:26.9, name:'Aliaga Refinery (Tupras)', country:'Turkey', detail:'Tüpraş Aliaga refinery Izmir. 200,000 bbl/d. Aegean coast refinery processing diverse crude slate.' },
+
+    // Turkmenistan
+    { lat:39.5, lng:54.4, name:'Seidi Refinery', country:'Turkmenistan', detail:'Turkmenneft Seidi refinery. 120,000 bbl/d. Processes Turkmen crude from Amu Darya Basin.' },
+    { lat:40.0, lng:53.0, name:'Turkmenbashi Refinery', country:'Turkmenistan', detail:'Turkmenneft Turkmenbashi refinery. 116,000 bbl/d. Caspian coast refinery. Largest in Turkmenistan.' },
+
+    // UAE
+    { lat:24.5, lng:54.3, name:'Abu Dhabi Refinery (ADNOC)', country:'UAE', detail:'Abu Dhabi Oil Refining Company (Takreer) Abu Dhabi refinery. 85,000 bbl/d. Processes Abu Dhabi crude for domestic fuels and LPG.' },
+    { lat:25.1, lng:55.2, name:'Jebel Ali Refinery (ENOC)', country:'UAE', detail:'Emirates National Oil Company Jebel Ali refinery Dubai. 140,000 bbl/d. Supplies Dubai domestic fuel market.' },
+
+    // Vietnam
+    { lat:15.4, lng:108.8, name:'Dung Quat Refinery (PetroVietnam)', country:'Vietnam', detail:'Binh Son Refining Dung Quat refinery Quang Ngai. 148,000 bbl/d. Vietnam\'s first refinery. Processes Bach Ho domestic crude.' },
+    { lat:19.8, lng:105.8, name:'Nghi Son Refinery', country:'Vietnam', detail:'Nghi Son Refinery and Petrochemicals Thanh Hoa. 200,000 bbl/d. Joint venture with Kuwait, Idemitsu, and Mitsui. Vietnam\'s largest and most modern refinery.' },
+
+    // Yemen
+    { lat:12.8, lng:45.0, name:'Aden Refinery', country:'Yemen', detail:'Aden Refinery Company. 120,000 bbl/d. Yemen\'s main refinery. Severely damaged by conflict. Operations intermittent since 2015 civil war.' },
+
+    // ── EUROPE ──
+    // Albania
+    { lat:40.7, lng:19.5, name:'Ballsh Refinery (ARMO)', country:'Albania', detail:'ARMO Oil Refinery Ballsh. 20,000 bbl/d. Processes Albanian domestic crude from Patos-Marinze oilfield.' },
+
+    // Austria
+    { lat:48.1, lng:16.5, name:'Schwechat Refinery (OMV)', country:'Austria', detail:'OMV Schwechat refinery Vienna. 176,000 bbl/d. Austria\'s only refinery. Receives crude via Trans-Alpine Pipeline from Trieste. Supplies Central European market.' },
+
+    // Belarus
+    { lat:52.0, lng:29.3, name:'Mozyr Refinery (Slavneft)', country:'Belarus', detail:'Slavneft Mozyr refinery. 95,000 bbl/d. 21% stake Rosneft. Supplied by Druzhba pipeline. Key Belarusian refinery.' },
+    { lat:55.5, lng:28.7, name:'Novopolotsk Refinery (Naftan)', country:'Belarus', detail:'Naftan Novopolotsk refinery. 81,000 bbl/d. Northern Belarus refinery supplied by Russian Druzhba pipeline.' },
+
+    // Bosnia
+    { lat:45.1, lng:17.9, name:'Bosanski Brod Refinery', country:'Bosnia and Herzegovina', detail:'Nestro Bosanski Brod refinery. 30,000 bbl/d. Zarubezhneft (Russia) subsidiary. Druzhba pipeline supplied.' },
+
+    // Bulgaria
+    { lat:42.5, lng:27.5, name:'Lukoil Neftochim Burgas', country:'Bulgaria', detail:'Lukoil Neftochim Burgas refinery. 208,000 bbl/d. Bulgaria\'s only refinery. Black Sea terminal. Largest refinery in Southeast Europe. Ownership under political pressure following Russia sanctions.' },
+
+    // Croatia
+    { lat:45.3, lng:14.5, name:'Rijeka Refinery (INA)', country:'Croatia', detail:'INA Rijeka refinery Croatia. 90,000 bbl/d. Adriatic coast refinery. MOL (Hungary) controlled INA.' },
+    { lat:45.5, lng:16.4, name:'Sisak Refinery (INA)', country:'Croatia', detail:'INA Sisak refinery Croatia. 60,000 bbl/d. Inland refinery connected to Adria pipeline.' },
+
+    // Czech Republic
+    { lat:50.6, lng:13.6, name:'Kralupy Refinery (Orlen)', country:'Czech Republic', detail:'Orlen Unipetrol Kralupy refinery Czech Republic. 80,000 bbl/d. Bohemian refinery supplied by IKL pipeline from Ingolstadt Germany.' },
+
+    // Denmark
+    { lat:55.7, lng:11.1, name:'Kalundborg Refinery (Klesch)', country:'Denmark', detail:'Klesch Group Kalundborg refinery Denmark. 110,000 bbl/d. Denmark\'s main refinery. Processes North Sea crude. Industrial symbiosis park co-located.' },
+    { lat:55.6, lng:9.8, name:'Fredericia Refinery (Shell)', country:'Denmark', detail:'Shell Fredericia refinery Denmark. 68,000 bbl/d. Jutland peninsula refinery processing North Sea crude.' },
+
+    // Finland
+    { lat:60.4, lng:25.7, name:'Porvoo Refinery (Neste)', country:'Finland', detail:'Neste Porvoo refinery. 206,000 bbl/d. Finland\'s largest and most complex refinery. World\'s largest renewable diesel producer alongside fossil fuel processing.' },
+
+    // France
+    { lat:49.5, lng:0.5, name:'Port Jerome Gravenchon (ExxonMobil)', country:'France', detail:'ExxonMobil Port Jérôme-Gravenchon refinery Normandy. 270,000 bbl/d. Major Seine estuary refinery processing North Sea crude.' },
+    { lat:45.7, lng:4.9, name:'Feyzin Refinery (TotalEnergies)', country:'France', detail:'TotalEnergies Feyzin refinery Lyon area. 119,000 bbl/d. Inland refinery connected to SPMR pipeline from Fos-Marseille.' },
+    { lat:43.4, lng:4.9, name:'Fos-sur-Mer Refinery', country:'France', detail:'Rhône Energies Fos-sur-Mer refinery Marseille area. 140,000 bbl/d. Mediterranean import refinery.' },
+
+    // Germany
+    { lat:53.5, lng:8.1, name:'Wilhelmshaven Refinery (Hestya)', country:'Germany', detail:'Hestya Energy Wilhelmshaven refinery. 300,000 bbl/d. North Sea coast refinery. Key strategic location for North Sea crude imports.' },
+    { lat:48.8, lng:11.5, name:'Ingolstadt Refinery (Bayernoil)', country:'Germany', detail:'Bayernoil Ingolstadt refinery Bavaria. 262,000 bbl/d. Joint venture VARO Energy, Eni, Rosneft stake disputed, BP. Supplied by TAL pipeline from Trieste.' },
+    { lat:51.4, lng:12.0, name:'TotalEnergies Mitteldeutschland Refinery', country:'Germany', detail:'TotalEnergies Mitteldeutschland refinery Leuna Saxony-Anhalt. 227,000 bbl/d. Connected to Druzhba pipeline network. Diversifying to Baltic crude.' },
+    { lat:53.6, lng:10.1, name:'Hamburg Holborn Refinery (Tamoil)', country:'Germany', detail:'Tamoil Hamburg Holborn refinery. 100,000 bbl/d. North German port city refinery. Processes North Sea and imported crude.' },
+    { lat:54.2, lng:9.1, name:'Heide Raffinerie (Klesch)', country:'Germany', detail:'Klesch Group Heide refinery Schleswig-Holstein. 90,000 bbl/d. Nelson Complexity Index 9.9. Northernmost German refinery.' },
+    { lat:52.5, lng:7.3, name:'Emsland Lingen Refinery (BP)', country:'Germany', detail:'BP Emsland Lingen refinery Lower Saxony. 80,000 bbl/d. Nelson Complexity Index 10.77. Northwest Germany refinery.' },
+    { lat:48.0, lng:12.7, name:'Burghausen Refinery (OMV)', country:'Germany', detail:'OMV Burghausen refinery Bavaria. 70,000 bbl/d. Southernmost German refinery. Supplied by TAL pipeline.' },
+
+    // Greece
+    { lat:38.0, lng:22.9, name:'Corinth Refinery (Motor Oil)', country:'Greece', detail:'Motor Oil Hellas Corinth refinery Peloponnese. 255,000 bbl/d. Greece\'s largest private refinery. Mediterranean import refinery.' },
+    { lat:38.1, lng:23.6, name:'Aspropyrgos Refinery (Hellenic)', country:'Greece', detail:'Hellenic Petroleum Aspropyrgos refinery Athens area. 148,000 bbl/d. Supplies Greek capital fuel demand.' },
+    { lat:38.0, lng:23.5, name:'Elefsina Refinery (Hellenic)', country:'Greece', detail:'Hellenic Petroleum Elefsina refinery Attica. 100,000 bbl/d. Near Athens. Part of Hellenic Petroleum integrated complex.' },
+    { lat:40.6, lng:22.9, name:'Thessaloniki Refinery (Hellenic)', country:'Greece', detail:'Hellenic Petroleum Thessaloniki refinery northern Greece. 93,000 bbl/d. Processes Black Sea and Middle East crude.' },
+
+    // Ireland
+    { lat:51.8, lng:-8.3, name:'Whitegate Refinery (Irving Oil)', country:'Ireland', detail:'Irving Oil Whitegate refinery Cork Ireland. 71,000 bbl/d. Ireland\'s only refinery. Processes imported crude for Irish domestic market.' },
+
+    // Italy
+    { lat:39.2, lng:9.0, name:'Sarlux Sarroch Refinery (Saras)', country:'Italy', detail:'Saras Sarlux Sarroch refinery Sardinia. 300,000 bbl/d. Italy\'s largest refinery. Mediterranean island location processes Middle East crude. Major product exporter.' },
+    { lat:38.2, lng:15.2, name:'Milazzo RAM Refinery (Eni/Kuwait)', country:'Italy', detail:'Eni and Kuwait Petroleum Italia Milazzo refinery Sicily. 200,000 bbl/d. Sicilian north coast refinery processing Middle East crude.' },
+    { lat:45.4, lng:8.7, name:'Sarpom Trecate Refinery', country:'Italy', detail:'SARPOM Trecate Novara refinery Piedmont. 200,000 bbl/d. IP and ERG joint venture. Northern Italy refinery.' },
+    { lat:37.2, lng:15.3, name:'Augusta Sonatrach Refinery', country:'Italy', detail:'Sonatrach Raffineria Italiana Augusta Sicily. 190,000 bbl/d. Algerian state company owned Sicilian refinery. Key Mediterranean import point.' },
+    { lat:38.2, lng:15.6, name:'ISAB ERG North Refinery', country:'Italy', detail:'ISAB ERG Lukoil Impianti Nord Syracuse Sicily. 160,000 bbl/d. Northern Syracuse refinery complex. GOI Energy acquired after Lukoil divestment.' },
+    { lat:44.9, lng:8.9, name:'Sannazzaro Refinery (Eni)', country:'Italy', detail:'Eni Sannazzaro de Burgondi refinery Lombardy. 160,000 bbl/d. Northern Italy key refinery. Supplied by South European Pipeline and TAL.' },
+    { lat:43.6, lng:13.5, name:'Falconara Ancona Refinery (API)', country:'Italy', detail:'API Falconara Marittima Ancona refinery Marche. 85,000 bbl/d. Adriatic coast refinery processing Middle East crude.' },
+
+    // Lithuania
+    { lat:56.3, lng:22.3, name:'Mazeikiai Refinery (PKN Orlen)', country:'Lithuania', detail:'PKN Orlen Mažeikių Nafta refinery Lithuania. 263,000 bbl/d. Only refinery in Baltic states. Processes Russian Urals crude via Druzhba and Baltic sea imports.' },
+
+    // Netherlands
+    { lat:51.9, lng:4.2, name:'BP Rotterdam Refinery', country:'Netherlands', detail:'BP Rotterdam refinery. 400,000 bbl/d. Nelson Complexity Index 5.29. One of Europe\'s largest refineries alongside Shell Pernis.' },
+    { lat:51.9, lng:4.3, name:'ExxonMobil Botlek Rotterdam', country:'Netherlands', detail:'ExxonMobil Botlek Rotterdam refinery. 195,000 bbl/d. Rotterdam complex integrated with chemical plants.' },
+    { lat:51.4, lng:3.9, name:'Zeeland Refinery (Total/Lukoil)', country:'Netherlands', detail:'Zeeland Refinery Vlissingen Netherlands. 149,000 bbl/d. TotalEnergies and Lukoil joint venture. Processes North Sea and Middle East crude.' },
+
+    // Norway
+    { lat:60.8, lng:5.1, name:'Mongstad Refinery (Equinor)', country:'Norway', detail:'Equinor Mongstad refinery Vestland Norway. 200,000 bbl/d. Norway\'s main refinery co-located with Equinor crude terminal. Processes Brent and Oseberg crude.' },
+
+    // Poland
+    { lat:54.4, lng:18.6, name:'Gdansk Refinery (Orlen Lotos)', country:'Poland', detail:'PKN Orlen (formerly Lotos) Gdansk refinery. 210,000 bbl/d. Baltic Sea port refinery receiving non-Russian crude imports since 2022. Acquired by PKN Orlen following Lotos merger.' },
+
+    // Portugal
+    { lat:37.9, lng:-8.9, name:'Sines Refinery (Galp)', country:'Portugal', detail:'Galp Energia Sines refinery. 220,000 bbl/d. Portugal\'s only operational refinery. Atlantic coast deep water port. Processes West African and Middle East crude.' },
+
+    // Romania
+    { lat:44.9, lng:26.1, name:'Petrobrazi Ploiesti Refinery (OMV)', country:'Romania', detail:'Petrom OMV Petrobrazi refinery Ploiesti. 90,000 bbl/d. Processes domestic Romanian and imported crude. OMV major refining base in Romania.' },
+    { lat:44.9, lng:26.0, name:'Petrotel Lukoil Ploiesti', country:'Romania', detail:'Lukoil Petrotel refinery Ploiesti Romania. 68,000 bbl/d. Russian-owned refinery in historic Romanian oil heartland.' },
+
+    // Serbia
+    { lat:44.9, lng:20.7, name:'Novi Sad Refinery (NIS)', country:'Serbia', detail:'Naftna Industrija Srbije Novi Sad refinery. 2.6 million tonnes/year. Gazprom Neft subsidiary. Northern Serbian refinery.' },
+
+    // Slovakia
+    { lat:48.1, lng:17.2, name:'Slovnaft Bratislava Refinery', country:'Slovakia', detail:'Slovnaft MOL Bratislava refinery. 110,000 bbl/d. Slovakia\'s only refinery. Supplied by Druzhba pipeline southern branch.' },
+
+    // Spain
+    { lat:36.7, lng:-6.4, name:'Palos de la Frontera Refinery (CEPSA)', country:'Spain', detail:'CEPSA Palos de la Frontera refinery Huelva. 200,000 bbl/d. Atlantic coast refinery processing West African and Middle East crude.' },
+    { lat:36.2, lng:-5.4, name:'Gibraltar San Roque Refinery (CEPSA)', country:'Spain', detail:'CEPSA Gibraltar-San Roque refinery Cadiz. 240,000 bbl/d. Strait of Gibraltar location. Processes North African and Middle East crude.' },
+    { lat:28.5, lng:-16.3, name:'Tenerife Refinery (CEPSA)', country:'Spain', detail:'CEPSA Tenerife refinery Canary Islands. 90,000 bbl/d. Key Atlantic bunkering hub. Planned closure 2030.' },
+    { lat:39.9, lng:-0.0, name:'Castellon Refinery (BP)', country:'Spain', detail:'BP Castellon refinery Valencia Spain. 100,000 bbl/d. Nelson Complexity Index 10.58. Mediterranean coast refinery.' },
+
+    // Sweden
+    { lat:58.3, lng:11.4, name:'Lysekil Refinery (Preem)', country:'Sweden', detail:'Preem Lysekil refinery Västra Götaland. 220,000 bbl/d. Sweden\'s largest refinery on Gullmar Fjord west coast.' },
+    { lat:59.5, lng:17.9, name:'Nynashamn Refinery (Nynas)', country:'Sweden', detail:'Nynas Nynäshamn refinery Stockholm archipelago. 90,000 bbl/d. Specialist lube oil and bitumen refinery.' },
+
+    // Switzerland
+    { lat:47.0, lng:7.1, name:'Cressier Refinery (VaroEnergy)', country:'Switzerland', detail:'VaroEnergy Cressier refinery Neuchâtel Switzerland. 68,000 bbl/d. Switzerland\'s only refinery. Supplied by SPSE pipeline from Marseille.' },
+
+    // Ukraine
+    { lat:49.1, lng:33.4, name:'Kremenchuk Refinery (Ukrtatnafta)', country:'Ukraine', detail:'Ukrtatnafta Kremenchuk refinery. 368,500 bbl/d. Ukraine\'s largest refinery on Dnieper River. Operations severely disrupted by Russian missile strikes since 2022.' },
+
+    // UK
+    { lat:50.9, lng:-1.3, name:'Fawley Refinery (ExxonMobil)', country:'United Kingdom', detail:'ExxonMobil Fawley refinery Hampshire England. 270,000 bbl/d. UK\'s largest refinery by capacity. Southampton Water deep water terminal. Processes North Sea and imported crude.' },
+    { lat:53.7, lng:-0.2, name:'Humber Refinery (Phillips 66)', country:'United Kingdom', detail:'Phillips 66 Humber refinery North Lincolnshire. 221,000 bbl/d. Nelson Complexity Index 11.8. North Sea coast refinery. Integrated with Humber refinery complex.' },
+    { lat:53.3, lng:-2.9, name:'Lindsey Oil Refinery (Prax)', country:'United Kingdom', detail:'Prax Group Lindsey Oil Refinery North Lincolnshire. 200,000 bbl/d. Processes North Sea and imported crude.' },
+    { lat:51.6, lng:-3.0, name:'Pembroke Refinery (Valero)', country:'United Kingdom', detail:'Valero Pembroke refinery Wales. 270,000 bbl/d. Nelson Complexity Index 11.6. UK\'s largest by throughput. Deep water Milford Haven receives VLCC tankers.' },
+
+    // ── AMERICAS ──
+    // Canada
+    { lat:53.5, lng:-113.3, name:'Strathcona Refinery (Imperial/ExxonMobil)', country:'Canada', detail:'Imperial Oil ExxonMobil Strathcona refinery Sherwood Park Alberta. 191,000 bbl/d. Canada\'s largest refinery. Processes oil sands bitumen and synthetic crude.' },
+    { lat:53.7, lng:-113.4, name:'Scotford Refinery (Shell/CNQ)', country:'Canada', detail:'Shell Canada Natural Resources Scotford refinery Alberta. 114,000 bbl/d. Integrated with Athabasca oil sands upgrader. Processes oil sands bitumen.' },
+    { lat:53.6, lng:-113.3, name:'Edmonton Suncor Refinery', country:'Canada', detail:'Suncor Energy Edmonton refinery Alberta. 142,000 bbl/d. Processes oil sands synthetic crude and WCS heavy crude.' },
+    { lat:45.3, lng:-66.1, name:'Irving Oil Saint John Refinery', country:'Canada', detail:'Irving Oil Saint John New Brunswick refinery. 320,000 bbl/d. Canada\'s largest single train refinery. Processes imported WTI and international crude. Atlantic export hub.' },
+    { lat:47.0, lng:-53.2, name:'Come by Chance Refinery', country:'Canada', detail:'North Atlantic Refining Come by Chance Newfoundland. 130,000 bbl/d. Processes offshore Hibernia crude and imported grades. Atlantic Canada key refinery.' },
+    { lat:43.2, lng:-79.9, name:'Nanticoke Refinery (Imperial)', country:'Canada', detail:'Imperial Oil ExxonMobil Nanticoke Ontario. 112,000 bbl/d. Lake Erie shore refinery processing Western Canadian and imported crude.' },
+    { lat:43.0, lng:-82.4, name:'Sarnia Refinery (Imperial)', country:'Canada', detail:'Imperial Oil ExxonMobil Sarnia Ontario. 121,000 bbl/d. Chemical Valley Sarnia processes Alberta crude via Enbridge pipeline.' },
+    { lat:45.5, lng:-73.6, name:'Montreal Suncor Refinery', country:'Canada', detail:'Suncor Energy Montreal refinery Quebec. 137,000 bbl/d. Quebec\'s major refinery processing imported Atlantic crude and pipeline crude.' },
+    { lat:46.8, lng:-71.2, name:'Jean-Gaulin Refinery (Valero)', country:'Canada', detail:'Valero Jean-Gaulin refinery Lévis Quebec. 235,000 bbl/d. Canada\'s second largest refinery. Processes imported WTI and international crude at St Lawrence River terminal.' },
+    { lat:50.5, lng:-104.6, name:'CCRL Regina Refinery', country:'Canada', detail:'Federated Co-operatives CCRL Regina Saskatchewan. 145,000 bbl/d. Processes Western Canadian crude. Major Prairie provinces fuel supplier.' },
+
+    // Cuba
+    { lat:23.1, lng:-82.4, name:'Nico Lopez Refinery (Cupet)', country:'Cuba', detail:'Cupet Nico López refinery Havana. 122,000 bbl/d. Cuba\'s main refinery. Historically processed Venezuelan crude under PetroCaribe arrangement.' },
+    { lat:20.0, lng:-75.8, name:'Hermanos Diaz Refinery (Cupet)', country:'Cuba', detail:'Cupet Hermanos Díaz refinery Santiago de Cuba. 102,500 bbl/d. Eastern Cuba refinery.' },
+
+    // Mexico
+    { lat:18.1, lng:-94.5, name:'Minatitlan Refinery (Pemex)', country:'Mexico', detail:'Pemex Minatitlan refinery Veracruz. 167,000 bbl/d. Gulf coast refinery processing Maya Heavy crude.' },
+    { lat:25.7, lng:-100.2, name:'Cadereyta Refinery (Pemex)', country:'Mexico', detail:'Pemex Cadereyta Jimenez refinery Nuevo Leon. 217,000 bbl/d. Northern Mexico refinery near Monterrey.' },
+    { lat:20.6, lng:-100.9, name:'Salamanca Refinery (Pemex)', country:'Mexico', detail:'Pemex Salamanca refinery Guanajuato. 192,000 bbl/d. Central Mexico inland refinery.' },
+    { lat:22.3, lng:-97.8, name:'Ciudad Madero Refinery (Pemex)', country:'Mexico', detail:'Pemex Francisco I Madero refinery Ciudad Madero Tamaulipas. 177,000 bbl/d. Gulf coast refinery.' },
+    { lat:16.2, lng:-95.2, name:'Salina Cruz Refinery (Pemex)', country:'Mexico', detail:'Pemex Salina Cruz refinery Oaxaca. 330,000 bbl/d. Pacific coast refinery. Mexico\'s largest by capacity.' },
+    { lat:18.4, lng:-93.2, name:'Dos Bocas Olmeca Refinery (Pemex)', country:'Mexico', detail:'Pemex Olmeca refinery Dos Bocas Tabasco. 340,000 bbl/d. New major refinery commissioned 2023. President Lopez Obrador flagship project.' },
+
+    // Caribbean
+    { lat:12.1, lng:-69.0, name:'Isla Refinery Curacao (RdK)', country:'Curacao', detail:'Refineria di Korsou Isla refinery Willemstad Curacao. 320,000 bbl/d. Historically processed Venezuelan crude under PDVSA lease. Strategic Caribbean location.' },
+
+    // US Major refineries by state
+    { lat:30.5, lng:-91.2, name:'ExxonMobil Baton Rouge Refinery', country:'USA', detail:'ExxonMobil Baton Rouge Louisiana refinery. 522,500 bbl/d. One of USA\'s largest. Mississippi River location. Processes WTI and imported crude.' },
+    { lat:30.1, lng:-90.0, name:'Marathon Garyville Refinery', country:'USA', detail:'Marathon Petroleum Garyville Louisiana. 606,000 bbl/d. One of USA\'s largest refineries. Processes WTI and Canadian crude.' },
+    { lat:30.1, lng:-90.1, name:'Citgo Lake Charles Refinery', country:'USA', detail:'Citgo Lake Charles Louisiana refinery. 455,000 bbl/d. Processes Venezuelan and other imported crude. PDVSA US subsidiary.' },
+    { lat:29.9, lng:-93.9, name:'ExxonMobil Beaumont Refinery', country:'USA', detail:'ExxonMobil Beaumont Texas refinery. 630,000 bbl/d. One of USA\'s largest after recent expansion. Gulf Coast processing hub.' },
+    { lat:29.8, lng:-93.9, name:'Motiva Port Arthur Refinery', country:'USA', detail:'Motiva Enterprises Port Arthur Texas. 730,000 bbl/d — USA\'s largest refinery. Saudi Aramco subsidiary processing Arab Heavy and WTI crude.' },
+    { lat:29.9, lng:-93.9, name:'Valero Port Arthur Refinery', country:'USA', detail:'Valero Port Arthur Texas refinery. 435,000 bbl/d. Nelson Complexity Index 12.4. Processes heavy imported crude and WTI.' },
+    { lat:29.8, lng:-95.1, name:'ExxonMobil Baytown Refinery', country:'USA', detail:'ExxonMobil Baytown Texas. 585,000 bbl/d. Nelson Complexity Index 13.7. One of world\'s largest integrated refinery and chemical complexes.' },
+    { lat:27.8, lng:-97.4, name:'Valero Corpus Christi Refinery', country:'USA', detail:'Valero Corpus Christi East and West refineries Texas. 370,000 bbl/d. Nelson Complexity Index 15.4. Key WTI processing hub near Permian Basin export terminals.' },
+    { lat:29.8, lng:-95.4, name:'Valero Houston Refinery', country:'USA', detail:'Valero Houston Texas refinery. 255,000 bbl/d. Nelson Complexity Index 8.9. Houston Ship Channel location.' },
+    { lat:29.9, lng:-95.3, name:'Marathon Galveston Bay Refinery', country:'USA', detail:'Marathon Petroleum Galveston Bay Texas City. 631,000 bbl/d — one of USA\'s largest. Processes WTI and heavy crude.' },
+    { lat:41.7, lng:-87.5, name:'BP Whiting Indiana Refinery', country:'USA', detail:'BP Whiting refinery Indiana near Chicago. 435,000 bbl/d. Nelson Complexity Index 9.73. USA\'s largest inland refinery. Processes Canadian oil sands WCS heavy crude.' },
+    { lat:33.5, lng:-86.8, name:'Saraland Vertex Energy Refinery', country:'USA', detail:'Vertex Energy Saraland Alabama refinery. 88,000 bbl/d. Gulf South refinery processing WTI and domestic crude.' },
+    { lat:34.2, lng:-87.6, name:'Tuscaloosa Hunt Refinery', country:'USA', detail:'Hunt Refining Company Tuscaloosa Alabama. 72,000 bbl/d. Southeastern US inland refinery.' },
+    { lat:33.7, lng:-116.2, name:'Los Angeles Marathon Refinery', country:'USA', detail:'Marathon Petroleum Los Angeles Carson Wilmington California. 365,000 bbl/d. Nelson Complexity Index 12.07. California\'s largest refinery complex.' },
+    { lat:37.9, lng:-122.4, name:'Chevron Richmond California Refinery', country:'USA', detail:'Chevron Richmond refinery California. 245,000 bbl/d. San Francisco Bay area. West Coast crude processing hub.' },
+    { lat:33.9, lng:-118.3, name:'Valero Wilmington Refinery', country:'USA', detail:'Valero Wilmington California refinery. 135,000 bbl/d. Nelson Complexity Index 15.9. Los Angeles Harbor area.' },
+    { lat:37.9, lng:-122.0, name:'PBF Martinez Refinery', country:'USA', detail:'PBF Energy Martinez California refinery. 157,000 bbl/d. Nelson Complexity Index 16.1. San Francisco Bay area.' },
+    { lat:38.0, lng:-121.8, name:'Valero Benicia Refinery', country:'USA', detail:'Valero Benicia California refinery. 170,000 bbl/d. Nelson Complexity Index 16.1. May cease operations by April 2026 per company announcement.' },
+    { lat:44.9, lng:-93.1, name:'Flint Hills Pine Bend Refinery', country:'USA', detail:'Flint Hills Resources Koch Industries Pine Bend refinery Rosemount Minnesota. 375,000 bbl/d. USA\'s largest inland refinery by capacity. Processes Canadian oil sands WCS.' },
+    { lat:37.7, lng:-88.9, name:'Marathon Robinson Refinery', country:'USA', detail:'Marathon Petroleum Robinson Illinois refinery. 253,000 bbl/d. Midwest crude processing hub.' },
+    { lat:38.7, lng:-90.4, name:'WRB Wood River Refinery (Phillips 66)', country:'USA', detail:'WRB Refining Phillips 66 Cenovus Wood River Roxana Illinois. 346,000 bbl/d. Nelson Complexity Index 11.0. Major Mississippi River refinery processing Canadian heavy crude.' },
+    { lat:38.8, lng:-104.8, name:'Suncor Commerce City Refinery', country:'USA', detail:'Suncor Energy Commerce City Colorado refinery. 98,000 bbl/d. Rocky Mountain region refinery processing DJ Basin and Canadian crude.' },
+    { lat:46.8, lng:-100.8, name:'Marathon Mandan Refinery', country:'USA', detail:'Marathon Petroleum Mandan North Dakota refinery. 71,000 bbl/d. Processes Bakken crude from nearby Williston Basin.' },
+    { lat:36.2, lng:-95.9, name:'HF Sinclair Tulsa Refinery', country:'USA', detail:'HF Sinclair Tulsa Oklahoma East and West refineries. 125,000 bbl/d. Nelson Complexity Index 14.0. Processes Mid-Continent WTI crude.' },
+    { lat:36.7, lng:-97.1, name:'Phillips 66 Ponca City Refinery', country:'USA', detail:'Phillips 66 Ponca City Oklahoma refinery. 217,000 bbl/d. Nelson Complexity Index 8.8. Mid-Continent crude processing.' },
+    { lat:37.7, lng:-97.3, name:'HF Sinclair El Dorado Refinery', country:'USA', detail:'HF Sinclair El Dorado Kansas refinery. 135,000 bbl/d. Nelson Complexity Index 11.8. Processes Mid-Continent crude.' },
+    { lat:38.5, lng:-82.7, name:'Marathon Catlettsburg Refinery', country:'USA', detail:'Marathon Petroleum Catlettsburg Kentucky refinery. 300,000 bbl/d. Largest Kentucky refinery. Processes WTI and Canadian crude.' },
+    { lat:30.4, lng:-88.5, name:'Chevron Pascagoula Refinery', country:'USA', detail:'Chevron Pascagoula Mississippi refinery. 330,000 bbl/d. Gulf Coast refinery processing WTI and imported crude. Plans to nearly triple capacity.' },
+    { lat:39.9, lng:-75.5, name:'PBF Delaware City Refinery', country:'USA', detail:'PBF Energy Delaware City refinery. 180,000 bbl/d. Nelson Complexity Index 13.6. East Coast crude processing.' },
+    { lat:40.1, lng:-74.2, name:'Phillips 66 Bayway Refinery', country:'USA', detail:'Phillips 66 Bayway refinery Linden New Jersey. 258,000 bbl/d. New York Harbor area. Key East Coast fuel supply.' },
+    { lat:39.9, lng:-75.3, name:'PBF Paulsboro Refinery', country:'USA', detail:'PBF Energy Paulsboro New Jersey refinery. 155,000 bbl/d. Nelson Complexity Index 13.2. Delaware River location.' },
+    { lat:40.0, lng:-75.5, name:'Monroe Trainer Refinery (Delta)', country:'USA', detail:'Monroe Energy Delta Air Lines subsidiary Trainer Pennsylvania refinery. 185,000 bbl/d. Unique airline-owned refinery ensuring jet fuel supply for Delta flights.' },
+    { lat:35.2, lng:-90.0, name:'Valero Memphis Refinery', country:'USA', detail:'Valero Memphis Tennessee refinery. 195,000 bbl/d. Nelson Complexity Index 7.9. Mississippi River location processing Mid-Continent crude.' },
+    { lat:48.5, lng:-122.6, name:'HF Sinclair Anacortes Refinery', country:'USA', detail:'HF Sinclair Puget Sound refinery Anacortes Washington. 149,000 bbl/d. Processes ANS Alaska and Canadian Trans Mountain crude.' },
+    { lat:48.8, lng:-122.7, name:'BP Cherry Point Refinery', country:'USA', detail:'BP Cherry Point refinery Blaine Washington. 225,000 bbl/d. Nelson Complexity Index 9.59. Processes ANS Alaska crude.' },
+    { lat:41.6, lng:-111.8, name:'HF Sinclair Woods Cross Refinery', country:'USA', detail:'HF Sinclair Woods Cross Utah refinery. 45,000 bbl/d. Processes Rocky Mountain and Canadian crude.' },
+    { lat:46.7, lng:-92.1, name:'Cenovus Superior Refinery', country:'USA', detail:'Cenovus Energy Superior Wisconsin refinery. 49,000 bbl/d. Processes Canadian oil sands WCS heavy crude via Enbridge pipeline.' },
+
+    // South America
+    // Argentina
+    { lat:-34.9, lng:-57.9, name:'La Plata Refinery (YPF)', country:'Argentina', detail:'YPF La Plata refinery Buenos Aires Province. 189,000 bbl/d. Argentina\'s largest refinery. Processes Patagonian and Vaca Muerta crude.' },
+    { lat:-34.6, lng:-58.5, name:'Buenos Aires Shell Refinery', country:'Argentina', detail:'Royal Dutch Shell Buenos Aires Argentina refinery. 110,000 bbl/d. Processes imported and domestic crude for Buenos Aires market.' },
+    { lat:-32.9, lng:-68.9, name:'Lujan de Cuyo Refinery (YPF)', country:'Argentina', detail:'YPF Luján de Cuyo refinery Mendoza. 105,500 bbl/d. Andean foothills refinery processing Neuquén Basin crude.' },
+    { lat:-33.9, lng:-60.9, name:'Axion Campana Refinery', country:'Argentina', detail:'Axion Energy (formerly Esso) Campana refinery Buenos Aires Province. 84,500 bbl/d. Parana River location.' },
+
+    // Bolivia
+    { lat:-17.4, lng:-66.2, name:'Cochabamba Refinery (YPFB)', country:'Bolivia', detail:'YPFB Gualberto Villarroel Cochabamba refinery Bolivia. 40,000 bbl/d. Bolivia\'s largest refinery processing Andean crude.' },
+
+    // Brazil - comprehensive Petrobras network
+    { lat:-30.0, lng:-51.2, name:'REFAP Petrobras Canoas', country:'Brazil', detail:'Petrobras REFAP refinery Canoas Rio Grande do Sul. 201,000 bbl/d. Southern Brazil major refinery. Processes domestic pre-salt crude.' },
+    { lat:-23.7, lng:-46.6, name:'RECAP Petrobras Maua', country:'Brazil', detail:'Petrobras RECAP refinery Mauá São Paulo state. 53,500 bbl/d. Greater São Paulo area refinery.' },
+    { lat:-22.8, lng:-47.1, name:'REPLAN Petrobras Paulinia', country:'Brazil', detail:'Petrobras REPLAN refinery Paulínia São Paulo. 434,000 bbl/d — Brazil\'s largest. Processes pre-salt and imported crude. Key São Paulo state fuel supply.' },
+    { lat:-23.2, lng:-45.9, name:'REVAP Petrobras Sao Jose', country:'Brazil', detail:'Petrobras REVAP refinery São José dos Campos São Paulo. 251,500 bbl/d. Processes pre-salt crude. Paraíba Valley corridor supply.' },
+    { lat:-23.9, lng:-46.4, name:'RPBC Petrobras Cubatao', country:'Brazil', detail:'Petrobras RPBC refinery Cubatão São Paulo coast. 170,000 bbl/d. Santos Bay coast industrial complex refinery.' },
+    { lat:-22.8, lng:-43.3, name:'REDUC Petrobras Rio', country:'Brazil', detail:'Petrobras REDUC refinery Duque de Caxias Rio de Janeiro. 242,000 bbl/d. Key Rio de Janeiro state fuel supply. Processes pre-salt crude.' },
+    { lat:-3.1, lng:-60.0, name:'REMAN Petrobras Manaus', country:'Brazil', detail:'Petrobras REMAN refinery Manaus Amazonas. 46,000 bbl/d. Remote Amazon Basin refinery serving Manaus metropolitan area.' },
+    { lat:-3.7, lng:-38.5, name:'Lubnor Petrobras Fortaleza', country:'Brazil', detail:'Petrobras Lubnor lube oil refinery Fortaleza Ceará. 82,000 bbl/d. Northeast Brazil specialist lube oil refinery.' },
+    { lat:-19.9, lng:-44.0, name:'REGAP Petrobras Betim', country:'Brazil', detail:'Petrobras REGAP refinery Betim Minas Gerais. 170,000 bbl/d. Inland refinery serving Minas Gerais and Belo Horizonte metropolitan area.' },
+    { lat:-25.6, lng:-49.4, name:'REPAR Petrobras Araucaria', country:'Brazil', detail:'Petrobras REPAR refinery Araucária Paraná. 220,000 bbl/d. Southern Brazil refinery processing pre-salt crude via pipeline.' },
+    { lat:-12.6, lng:-38.8, name:'RLAM Petrobras Bahia', country:'Brazil', detail:'Petrobras RLAM refinery São Francisco do Conde Bahia. 280,000 bbl/d. Recôncavo Basin crude processing. Northeast Brazil largest refinery.' },
+    { lat:-8.4, lng:-35.0, name:'RNEST Petrobras Ipojuca', country:'Brazil', detail:'Petrobras RNEST refinery Ipojuca Pernambuco. 100,000 bbl/d. Northeast Brazil new refinery. Processes pre-salt crude.' },
+
+    // Chile
+    { lat:-36.8, lng:-73.1, name:'BioBio Refinery (ENAP)', country:'Chile', detail:'Empresa Nacional del Petróleo BioBio refinery Concepción Chile. 113,000 bbl/d. Chile\'s largest refinery. Processes imported crude.' },
+    { lat:-32.9, lng:-71.5, name:'Aconcagua Concon Refinery (ENAP)', country:'Chile', detail:'ENAP Aconcagua Concon refinery Valparaíso Chile. 97,650 bbl/d. Central Chile refinery near Valparaíso port.' },
+
+    // Colombia
+    { lat:7.1, lng:-73.9, name:'Barrancabermeja Refinery (Ecopetrol)', country:'Colombia', detail:'Ecopetrol Barrancabermeja Santander refinery. 240,000 bbl/d. Colombia\'s largest refinery on Magdalena River. Established 1922. Processes domestic Vasconia and Castilla crude.' },
+    { lat:10.4, lng:-75.5, name:'Cartagena Reficar Refinery', country:'Colombia', detail:'Reficar Cartagena Colombia refinery. 210,000 bbl/d. Caribbean coast refinery. Major upgrade completed 2015 by Ecopetrol.' },
+
+    // Ecuador
+    { lat:0.9, lng:-79.7, name:'Esmeraldas Refinery (Petroecuador)', country:'Ecuador', detail:'Petroecuador Esmeraldas refinery. 110,000 bbl/d. Ecuador\'s largest refinery on Pacific coast.' },
+    { lat:-2.2, lng:-80.9, name:'La Libertad Refinery (Petroecuador)', country:'Ecuador', detail:'Petroecuador La Libertad refinery Santa Elena. 45,000 bbl/d. Coastal Ecuador refinery.' },
+
+    // Peru
+    { lat:-12.1, lng:-77.1, name:'La Pampilla Refinery (Repsol)', country:'Peru', detail:'Repsol La Pampilla Ventanilla Lima refinery Peru. 102,000 bbl/d. Peru\'s largest refinery. Processes Amazonian and imported crude.' },
+    { lat:-4.6, lng:-81.3, name:'Talara Refinery (Petroperu)', country:'Peru', detail:'Petroperu Talara refinery Piura. 65,000 bbl/d. Recently modernized with new FCC unit. Peru\'s oldest refinery 1917. Northwest Peru coastal location.' },
+
+    // Suriname
+    { lat:5.8, lng:-55.2, name:'Staatsolie Refinery', country:'Suriname', detail:'Staatsolie Paramaribo refinery Suriname. 15,000 bbl/d. Suriname\'s only refinery processing domestic crude.' },
+
+    // Uruguay
+    { lat:-34.9, lng:-56.2, name:'La Teja Refinery (ANCAP)', country:'Uruguay', detail:'ANCAP La Teja refinery Montevideo Uruguay. 50,000 bbl/d. Uruguay\'s only refinery. Established 1937. Processes imported crude for domestic market.' },
+
+    // Venezuela - Paraguana Complex
+    { lat:11.7, lng:-70.2, name:'Paraguana Refinery Complex (PDVSA)', country:'Venezuela', detail:'PDVSA Paraguana Refinery Complex — world\'s largest refinery complex at 956,000 bbl/d total including Amuay (635,000 bbl/d) and Cardon (305,000 bbl/d). Falcón Peninsula. Severely underutilized due to economic crisis and sanctions.' },
+    { lat:10.2, lng:-64.7, name:'Puerto La Cruz Refinery (PDVSA)', country:'Venezuela', detail:'PDVSA Puerto La Cruz refinery Anzoátegui. 200,000 bbl/d. Eastern Venezuela coast refinery.' },
+    { lat:10.7, lng:-68.1, name:'El Palito Refinery (PDVSA)', country:'Venezuela', detail:'PDVSA El Palito refinery Carabobo. 140,000 bbl/d. Central Venezuela coast refinery.' },
+
+    // ── OCEANIA ──
+    { lat:-38.2, lng:144.4, name:'Geelong Refinery (Viva Energy)', country:'Australia', detail:'Vitol Viva Energy Geelong refinery Victoria Australia. 130,000 bbl/d. Australia\'s largest remaining refinery. Processes Middle East crude via Melbourne port.' },
+    { lat:-27.4, lng:153.1, name:'Lytton Refinery (Ampol)', country:'Australia', detail:'Ampol Lytton refinery Brisbane Queensland. 104,000 bbl/d. Queensland\'s only refinery. Processes Middle East and domestic crude.' },
+    { lat:-9.5, lng:147.1, name:'Port Moresby Refinery (Puma Energy)', country:'Papua New Guinea', detail:'Puma Energy InterOil refinery Port Moresby Papua New Guinea. 32,500 bbl/d. Processes imported crude for PNG domestic market.' },
+  ];
+
+  refineries3.forEach(function(r){
+    L.marker([r.lat,r.lng],{icon:icon('#3a8fc1',13,'square')})
+      .bindPopup(popup('#3a8fc1','Refinery Hub',r.name,r.country,r.detail,null),{className:'oil-popup',maxWidth:300})
+      .addTo(layers.refineries);
+  });
+
+  // ══════════════════════════════════════════
+  // OFFSHORE OIL RIGS & FPSOs
+  // ══════════════════════════════════════════
+  function rigIcon(){
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14">'
+      + '<rect x="1" y="1" width="12" height="12" fill="#ff6b35" stroke="rgba(255,255,255,0.6)" stroke-width="1.2" transform="rotate(45 7 7)" style="filter:drop-shadow(0 0 4px #ff6b3599)"/>'
+      + '</svg>';
+    return L.divIcon({ className:'', html:svg, iconSize:[14,14], iconAnchor:[7,7] });
+  }
+
+  var rigs = [
+
+    // ── NORTH SEA ──
+    { lat:60.5, lng:3.3, name:'Brage Platform', region:'North Sea', operator:'Equinor', detail:'Steel jacket integrated accommodation, processing and drilling installation. Operating since 1993. Peak production 120,000 bpd in 1998. Currently ~25,000 bpd. Oil transported via pipeline to Oseberg.' },
+    { lat:61.2, lng:2.1, name:'Nuggets Field', region:'North Sea', operator:'TotalEnergies', detail:'Located in blocks 3/18c, 3/19a, 3/19b, 3/20a, 3/24a, 3/24c and 3/25a in the UK sector of the northern North Sea, south of Dunbar. Water depth 120m.' },
+    { lat:65.1, lng:7.8, name:'Kristin Deepwater', region:'Norwegian Sea', operator:'Equinor', detail:'Four subsea templates tied back to a floating production platform. Daily production capacity 126,000 barrels of condensate and 18 million cubic metres of rich gas. Reservoir nearly 5,000 metres beneath seabed. 12 subsea wells.' },
+    { lat:64.8, lng:6.4, name:'Tyrihans Field', region:'Norwegian Sea', operator:'Equinor', detail:'Located on Haltenbank in the Norwegian Sea, 35km southeast of Kristin field in ~285m of water. Comprises two structures: Tyrihans North and Tyrihans South.' },
+    { lat:57.8, lng:2.4, name:'Shearwater Platform', region:'North Sea', operator:'Shell', detail:'Located in the Central Graben area of the central North Sea, approximately 200km east of Aberdeen in 90m of water.' },
+    { lat:52.5, lng:4.0, name:'Hanze F2A Platform', region:'North Sea', operator:'Veba Oil Netherlands', detail:'Located in block F/2 in the Dutch sector of the North Sea, about 200km northwest of Den Helder. Reserves exceeding 34 million barrels of oil plus 40bcf associated gas.' },
+    { lat:57.9, lng:1.2, name:'R Block Renee-Rubie', region:'North Sea', operator:'ConocoPhillips', detail:'Located approximately 200km northeast of Aberdeen. Renee lies in 146m of water, 21.6km from AH001. Rubie in 148m water depth, 5.6km from Renee.' },
+    { lat:58.9, lng:1.9, name:'Gungne Satellite', region:'North Sea', operator:'Equinor', detail:'Satellite to Sleipner East. Discovered 1982, began producing 21 April 1996 through a well drilled from Sleipner A platform. Record 7,377 metre horizontal offset from platform at time of drilling.' },
+    { lat:57.5, lng:1.8, name:'Morpeth TLP', region:'North Sea', operator:'British Borneo', detail:'Tension Leg Platform sanctioned February 1997. Hull installed using McDermott DB50 derrick barge. Gulf of Mexico deepwater design adapted for North Sea conditions.' },
+
+    // ── BARENTS SEA ──
+    { lat:71.3, lng:23.1, name:'Snøhvit Gas Field', region:'Barents Sea', operator:'Equinor', detail:'Three-field development: Snøhvit, Albatross and Askeladd. Located ~140km northwest of Hammerfest in 250-345m water. Discovered 1984. World\'s first offshore LNG development with no surface installations — all subsea.' },
+    { lat:72.5, lng:43.5, name:'Shtokman Gas Condensate', region:'Barents Sea', operator:'Sevmorneftegas (Gazprom/Rosneft)', detail:'Giant Barents Sea gas condensate field. Appraisal drilling 1990-1995. Licensee Sevmorneftegaz owned by Rosneft and Gazprom. Preliminary agreements with Chevron, ConocoPhillips, ExxonMobil for development.' },
+    { lat:71.2, lng:22.3, name:'Goliat FPSO', region:'Barents Sea', operator:'ENI', detail:'Located 85km northwest of Hammerfest, 50km southeast of Snøhvit. Water depth 341m. First oil field development in the Norwegian Barents Sea. Circular FPSO designed for Arctic conditions.' },
+    { lat:69.2, lng:57.5, name:'Prirazlomnoye Platform', region:'Pechora Sea', operator:'Gazprom Neft (Sevmorneftegaz)', detail:'Located south of Novaya Zemlya, 60km from shore. Water depth 19-20m. Discovered 1989. Russia\'s first Arctic offshore oil production platform. Ice-resistant fixed platform. Produces ARCO crude grade.' },
+
+    // ── WEST AFRICA ──
+    { lat:-5.8, lng:11.3, name:'Lobito Tomboco (Block 14)', region:'Angola', operator:'Cabinda Gulf Oil Company (Chevron)', detail:'Three subsea centers tied back to Benguela Belize compliant tower. Located in 1,200-2,000 feet of water in Block 14 offshore Cabinda. Lobito and Tomboco reservoirs.' },
+    { lat:5.3, lng:-4.8, name:'Espoir Field', region:'Ivory Coast', operator:'CNR International', detail:'Leading production facility for Ivory Coast oil and gas. Block CI-26, located 19km offshore Jacqueville, 60km southwest of Abidjan. Water depths 100-600m.' },
+    { lat:-5.5, lng:11.0, name:'Sanha Bomboco Field', region:'Angola', operator:'Cabinda Gulf Oil Company (Chevron)', detail:'Combined peak production 100,000 bpd oil, condensate and LPG. CABGOC (39.2%) operates on behalf of Sonangol (41%), TotalEnergies (10%), ENI (9.8%).' },
+    { lat:3.8, lng:6.9, name:'Ekpe Phase II Platform', region:'Nigeria', operator:'ExxonMobil', detail:'Gas compression platform in 50m water depth. Phase II consists of new gas compression platform (OY) and new living quarters platform (OQ).' },
+    { lat:1.5, lng:9.0, name:'Ceiba Field', region:'Equatorial Guinea', operator:'Triton Energy', detail:'Triton operator (85%) with Energy Africa (15%) on Blocks F and G. Seismic data 4,200km². Permeability 1mD to 1D, porosity 20-30%, oil saturation extensive.' },
+    { lat:3.8, lng:3.3, name:'Agbami Field', region:'Nigeria', operator:'Famfa Oil (StarDeep/Chevron)', detail:'Located in OPL Block 216, approximately 220 miles southeast of Lagos and 70 miles offshore Nigeria in the central Niger Delta deepwater. Over 900 million barrels recoverable.' },
+    { lat:-8.5, lng:11.8, name:'Pazflor FPSO (Block 17)', region:'Angola', operator:'TotalEnergies', detail:'Located in Angola Block 17, ~40km east of Dalia FPSO. Develops Miocene reservoirs with heavy acid viscous oil using gas/liquid separation and Oligocene light paraffinic oil.' },
+    { lat:-8.3, lng:11.5, name:'Kizomba FPSO (Block 15)', region:'Angola', operator:'ExxonMobil', detail:'Kizomba A covers Hungo and Chocalho fields. Total recoverable ~1 billion barrels. Began producing 130,000 bpd August 2005 in 3,300-4,200 feet water. Investment $3.5 billion.' },
+    { lat:-8.4, lng:11.6, name:'Xikomba FPSO', region:'Angola', operator:'Esso Exploration Angola (ExxonMobil)', detail:'Early Production System of 9 subsea wells tied back to FPSO. Third EPS deployment offshore West Africa and first offshore Angola. Contracted Technip-Coflexip.' },
+    { lat:4.2, lng:3.5, name:'Bonga FPSO', region:'Nigeria', operator:'Shell', detail:'One of world\'s largest FPSOs with 2 million barrel storage capacity. 16 subsea oil producing and water injection wells. First deepwater development offshore Nigeria. Produces Nigeria\'s Bonga crude grade.' },
+
+    // ── BRAZIL - CAMPOS BASIN ──
+    { lat:-22.5, lng:-40.2, name:'Espadarte FPSO', region:'Campos Basin', operator:'Petrobras', detail:'FPSO converted from monohull tanker Berge Pilot at Astano Cadiz. Conversion by Keppel Singapore shipyard. Produces from Campos Basin deepwater fields.' },
+    { lat:-22.8, lng:-40.5, name:'Marlim Sul FPSO', region:'Campos Basin', operator:'Petrobras', detail:'Discovered November 1987. Located 110km offshore Rio de Janeiro state. Water depth varies 720m in north to 2,600m in south.' },
+    { lat:-22.4, lng:-40.3, name:'Roncador P-52 Platform', region:'Campos Basin', operator:'Petrobras', detail:'Site of P-36 sinking in March 2001 after three explosions killing 11 workers. P-36 was producing 84,000 bpd at time. Now developed with P-52 and P-54 FPSOs.' },
+    { lat:-22.6, lng:-40.4, name:'Bijupira Salema FPSO', region:'Campos Basin', operator:'Shell (formerly Enterprise Oil)', detail:'Combined estimated recoverable reserves ~170 million barrels. Bijupira 114 million barrels (28° API), Salema 31° API. Discovered by Petrobras 1990. 1.6 billion cubic metres gas.' },
+    { lat:-22.7, lng:-40.6, name:'Barracuda Caratinga FPSOs', region:'Campos Basin', operator:'Petrobras', detail:'ANP concession rights for both fields. Combined production expected 773 million barrels by 2025. Proved and probable reserves significant. Two FPSO development.' },
+    { lat:-22.5, lng:-40.1, name:'Marlim Field FPSOs', region:'Campos Basin', operator:'Petrobras', detail:'Discovered January 1985 via well RJS219A. Located ~110km off Rio de Janeiro coast. Developed in 5 modules with 7 production units due to complexity.' },
+
+    // ── GULF OF MEXICO ──
+    { lat:27.6, lng:-90.0, name:'Petronius Compliant Tower', region:'Gulf of Mexico', operator:'ChevronTexaco', detail:'World\'s tallest free-standing structure at time of construction. 43,000 ton topsides 64m x 43m x 18.3m. 21 well slots. Maximum production 60,000 bopd and 100 MMcfd gas. Discovered 1995.' },
+    { lat:26.5, lng:-89.5, name:'Independence Hub', region:'Gulf of Mexico', operator:'Anadarko', detail:'Result of five E&P companies and midstream company developing multiple ultra-deepwater gas and condensate discoveries. Six natural gas anchor fields. Ultra-deepwater gas hub in Mississippi Canyon.' },
+    { lat:28.5, lng:-88.5, name:'Na Kika Platform', region:'Gulf of Mexico', operator:'Shell', detail:'Located in Mississippi Canyon Block 474, ~140 miles southeast of New Orleans in 6,300 feet water depth. Shell deepwater hub development.' },
+    { lat:28.3, lng:-90.6, name:'Brutus TLP', region:'Gulf of Mexico', operator:'Shell', detail:'Discovery well Block 158 December 1988. Gross recovery ~250 million boe, 70:30 oil-to-gas ratio. Production via 18-inch line 26 miles to Boxer platform.' },
+    { lat:28.2, lng:-90.5, name:'Mars TLP', region:'Gulf of Mexico', operator:'Shell', detail:'Initial development designed to recover ~500 million barrels oil equivalent. Project cost ~$1 billion. 55% spent on hull, deck, facilities and pipelines. Key Gulf of Mexico deepwater hub.' },
+    { lat:28.7, lng:-89.3, name:'Canyon Express Gas', region:'Gulf of Mexico', operator:'TotalEnergies', detail:'Three separate deepwater gas fields in Mississippi Canyon and DeSoto Canyon connected via single pipeline. Three producers from three fields developing marginal fields jointly.' },
+    { lat:27.4, lng:-90.2, name:'Hoover Diana DDCV', region:'Gulf of Mexico', operator:'ExxonMobil', detail:'$1.2 billion co-development. Peak 100,000 bopd and 325 MMcfd gas. ExxonMobil (66.7%) operator, BP (33.3%). Deep Draft Caisson Vessel 83 stories tall, nearly half a football field in diameter.' },
+    { lat:28.1, lng:-90.8, name:'Horn Mountain Spar', region:'Gulf of Mexico', operator:'BP', detail:'Located in 5,400 feet water ~100 miles southeast of New Orleans. Mississippi Canyon blocks 126 and 127. BP deepwater spar development.' },
+    { lat:28.0, lng:-90.0, name:'Mardi Gras Pipeline System', region:'Gulf of Mexico', operator:'BP', detail:'Pipeline system transporting gas and oil from Mad Dog, Holstein and Atlantis fields in southern Green Canyon area. Massive deepwater infrastructure connecting multiple BP fields.' },
+
+    // ── CANADA ATLANTIC ──
+    { lat:46.8, lng:-53.0, name:'White Rose FPSO', region:'Canada Atlantic', operator:'Husky Energy', detail:'Located ~50km from Hibernia and Terra Nova fields. South White Rose oil pool covers ~40km², estimated 200-250 million barrels recoverable — one of largest North American oil discoveries.' },
+    { lat:44.0, lng:-63.5, name:'Deep Panuke Gas Platform', region:'Canada Atlantic', operator:'EnCana', detail:'EnCana Deep Panuke Project installs production infrastructure to produce gas reserves. Transmission to Nova Scotia mainland. Three platforms: production and support infrastructure.' },
+    { lat:46.8, lng:-48.8, name:'Hibernia GBS Platform', region:'Canada Atlantic', operator:'Hibernia Management', detail:'Located in Jeanne d\'Arc Basin, 315km east of St John\'s Newfoundland in 80m water. Two Cretaceous reservoirs: Hibernia and Avalon at 3,700m and 2,400m depth. Gravity Base Structure (GBS) ice-resistant design.' },
+    { lat:43.9, lng:-59.9, name:'Sable Offshore Energy Project', region:'Canada Atlantic', operator:'ExxonMobil', detail:'Six gas fields near Sable Island, 10-40km north of Scotian Shelf edge in 20-80m water. Offshore Nova Scotia major gas development.' },
+    { lat:46.4, lng:-48.5, name:'Terra Nova FPSO', region:'Canada Atlantic', operator:'Petro-Canada (Suncor)', detail:'Located 350km ESE of St John\'s Newfoundland, 35km SE of Hibernia. Discovered 1984. Reserves estimated 406 million barrels. FPSO development in harsh North Atlantic environment.' },
+
+    // ── TRINIDAD AND TOBAGO ──
+    { lat:10.6, lng:-61.3, name:'Savonette Platform', region:'Trinidad and Tobago', operator:'BP Trinidad and Tobago', detail:'Fourth development using standardised Cannonball design following hub and spoke strategy. Connected via 26-inch 9km subsea pipeline to Mahogany B platform. Low incremental development costs via standardised design.' },
+    { lat:10.5, lng:-61.2, name:'Bombax Pipeline', region:'Trinidad and Tobago', operator:'BP Trinidad and Tobago', detail:'Part of integrated initiative to develop BP\'s gas resources from east coast of Trinidad and Tobago. Connects offshore gas fields to Atlantic LNG onshore facility.' },
+    { lat:10.7, lng:-61.0, name:'Cannonball Platform', region:'Trinidad and Tobago', operator:'BP Trinidad and Tobago', detail:'Provides gas for Atlantic LNG Train 4. First production 2006 at ~800 MMscfd from 3 development wells. First in-country platform fabrication in Trinidad — major milestone for local content.' },
+    { lat:10.4, lng:-61.5, name:'Greater Angostura Platform', region:'Trinidad and Tobago', operator:'BHP Billiton', detail:'Trinidad Offshore Block 2c. BHP Billiton (45%), Talisman (25%), TotalEnergies (30%). Production sharing contract April 1996. Discovery well Angostura-1 drilled 1999.' },
+    { lat:10.3, lng:-61.4, name:'Cashima Platform', region:'Trinidad and Tobago', operator:'BP Trinidad and Tobago', detail:'Comprises Cashima field (discovered 2001) and North East Queens Beach field (discovered 1975). Single unmanned platform using standardised Cannonball design. Capacity for nine wells.' },
+    { lat:10.2, lng:-61.1, name:'Red Mango Platform', region:'Trinidad and Tobago', operator:'BP Trinidad and Tobago', detail:'First phase of Mango field development, discovered 2000 off southeast coast of Trinidad. Standardised Cannonball design. Single unmanned platform following hub and spoke concept.' },
+
+    // ── TIMOR SEA ──
+    { lat:-10.5, lng:126.5, name:'Laminaria FPSO', region:'Timor Sea', operator:'Woodside Energy', detail:'Located in Timor Sea 550km northwest of Darwin. Water depths 50m to 300-400m near Laminaria, 400-500m over Corallina. Deepens to 2,000m in Timor Trough.' },
+    { lat:-10.8, lng:126.2, name:'Buffalo Field', region:'Timor Sea (JPDA)', operator:'Nexen', detail:'Buffalo Field Development Area in Joint Petroleum Development Area of Timor Sea. ~560km northwest of Darwin. Discovered October 1996 by BHP.' },
+    { lat:-10.2, lng:125.7, name:'Bayu-Undan Platform', region:'Timor Sea', operator:'ConocoPhillips', detail:'Located in 80m water ~250km south of Suai Timor-Leste and 500km northwest of Darwin. Gas condensate field with 400 million barrels condensate/LPG and 3.4 trillion cubic feet gas recoverable. Feeds Darwin LNG.' },
+
+    // ── CASPIAN SEA ──
+    { lat:45.5, lng:51.0, name:'Kashagan FPSO (Block N)', region:'Caspian Sea', operator:'ENI / NCOC Consortium', detail:'One of world\'s largest oil discoveries. Technically challenging: high H2S content, extreme temperatures. Partners: Shell, ExxonMobil, TotalEnergies, CNPC, KazMunayGas, Inpex. Recoverable reserves ~13 billion barrels.' },
+    { lat:39.8, lng:49.8, name:'Shah Deniz Platform', region:'Caspian Sea', operator:'BP', detail:'Gas and condensate field discovered 1999, 100km south of Baku in 600m water. Reserves exceed 400 billion cubic metres gas. Supplies Southern Gas Corridor to Europe via TANAP/TAP pipelines.' },
+
+    // ── SOUTH CHINA SEA ──
+    { lat:21.0, lng:115.8, name:'Lufeng 22-1 FPSO', region:'South China Sea', operator:'CNOOC', detail:'Located 250km southeast of Hong Kong in 333m water. Recoverable reserves ~30 million barrels, recovery factor ~25% of oil-in-place.' },
+    { lat:20.8, lng:115.2, name:'Liuhua 11-1 FPSO', region:'South China Sea', operator:'CNOOC', detail:'Largest oil field in South China Sea at time of development. Reservoir in 1,000 feet (300m) water. FPSO development with significant recoverable reserves.' },
+    { lat:11.8, lng:119.8, name:'Malampaya Platform', region:'South China Sea (Philippines)', operator:'Shell', detail:'Concrete gravity sub-structure platform. Processed gas compressed and exported via 504km pipeline to Batangas onshore facility Luzon Island Philippines. Condensate stored in CGS exported via shuttle tanker.' },
+    { lat:21.0, lng:111.5, name:'Wenchang FPSO (Nanhai Endeavor)', region:'South China Sea', operator:'CNOOC', detail:'Nanhai Endeavor turret-moored FPSO launched June 2001. 150,000 DWT capacity. Designed for typhoon-prone area. Two production platforms completed January 2002. CNOOC flagship South China Sea development.' },
+  ];
+
+  rigs.forEach(function(r){
+    var popupHtml = '<div style="font-family:Verdana,sans-serif;">'
+      + '<div style="background:#ff6b35;padding:8px 14px;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#fff;margin:-1px -1px 12px;">Offshore Rig / FPSO</div>'
+      + '<div style="padding:0 14px 14px;">'
+      + '<strong style="font-family:Georgia,serif;font-size:16px;color:#ffffff;display:block;margin-bottom:4px;">'+r.name+'</strong>'
+      + '<span style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#ff6b35;">'+r.region+'</span>'
+      + '<p style="font-size:10px;color:#c9a84c;margin-top:4px;margin-bottom:8px;">Operator: '+r.operator+'</p>'
+      + '<p style="font-size:11px;line-height:1.75;color:#8a9ab8;">'+r.detail+'</p>'
+      + '</div></div>';
+    L.marker([r.lat,r.lng],{icon:rigIcon()})
+      .bindPopup(popupHtml,{className:'oil-popup',maxWidth:300})
+      .addTo(layers.rigs);
+  });
+
+  // ── ADD ALL TO MAP ──
+  Object.keys(layers).forEach(function(k){ layers[k].addTo(map); });
+
+  // ── LAYER TOGGLE ──
+  var states = { producers:true, refineries:true, govt:true, terminals:true, routes:true, pipelines:true, rigs:true };
+
+  window.toggleLayer = function(name, btn){
+    if(states[name]){
+      map.removeLayer(layers[name]);
+      states[name] = false;
+      btn.classList.remove('on');
+    } else {
+      layers[name].addTo(map);
+      states[name] = true;
+      btn.classList.add('on');
+    }
+  };
+
+  // ══════════════════════════════════════════
+  // LIVE TANKER TOGGLE (VesselFinder embed)
+  // ══════════════════════════════════════════
+  var tankerPanelVisible = false;
+
+  window.toggleLiveTankers = function(btn){
+    var panel = document.getElementById('live-tanker-panel');
+    if(tankerPanelVisible){
+      panel.style.display = 'none';
+      tankerPanelVisible = false;
+      btn.classList.remove('on');
+    } else {
+      panel.style.display = 'block';
+      tankerPanelVisible = true;
+      btn.classList.add('on');
+    }
+  };
+
+})();
+  }
+  if(window.L){ initMap(); } else {
+    var lJs=document.createElement('script');
+    lJs.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+    lJs.onload=function(){ initMap(); };
+    document.head.appendChild(lJs);
+  }
+})();
+</script>
