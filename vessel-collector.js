@@ -265,13 +265,13 @@ function predictRoute(lat, lng, heading, destination, region, loadStatus, vessel
   let signals = [];
 
   // ── SIGNAL 1: Project heading forward and check waypoint alignment ──
-  // Project 500nm, 1000nm, 2000nm ahead and see what's nearby
-  const projections = [
+  // Only run if we have a valid heading (0-360). Skip if null/511.
+  const projections = (heading !== null && heading >= 0 && heading <= 360) ? [
     projectPosition(lat, lng, heading, 500),
     projectPosition(lat, lng, heading, 1000),
     projectPosition(lat, lng, heading, 2000),
     projectPosition(lat, lng, heading, 3000),
-  ];
+  ] : [];
 
   let bestHeadingRoute = null;
   let bestHeadingScore = 0;
@@ -509,7 +509,13 @@ async function collectVessels() {
             mmsi,
             name: (meta.ShipName || "").trim(),
             lat, lng,
-            heading: Number(pos.TrueHeading ?? pos.Cog ?? 0),
+            heading: (function() {
+                const th = Number(pos.TrueHeading ?? 511);
+                const cog = Number(pos.Cog ?? 511);
+                if (th >= 0 && th <= 360) return th;
+                if (cog >= 0 && cog <= 360) return cog;
+                return null; // truly unknown
+              })(),
             speed: Number(pos.Sog ?? 0),
             destination: "",
             draught: null,
