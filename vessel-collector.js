@@ -504,6 +504,9 @@ async function collectVessels() {
         if (!mmsi || mmsi === "0") return;
 
         if (msg.MessageType === "PositionReport") {
+          // Phase 2 — ignore all new position reports, only want static data now
+          if (phase === 2) return;
+
           const pos = msg.Message?.PositionReport || {};
           const lat = parseFloat(String(meta.latitude ?? pos.Latitude ?? "0"));
           const lng = parseFloat(String(meta.longitude ?? pos.Longitude ?? "0"));
@@ -531,7 +534,7 @@ async function collectVessels() {
           const count = Object.keys(positions).length;
           if (count % 10 === 0) console.log(`  Collected ${count} vessels...`);
 
-          // Phase 1 complete — now stay connected 20 more seconds for static data
+          // Phase 1 complete — stay connected 20 more seconds for static data
           if (count >= TARGET && phase === 1) {
             phase = 2;
             clearTimeout(timer);
@@ -543,6 +546,9 @@ async function collectVessels() {
         }
 
         if (msg.MessageType === "ShipStaticData") {
+          // Phase 2 — ONLY record static data for vessels already in our positions list
+          if (phase === 2 && !positions[mmsi]) return;
+
           const sd = msg.Message?.ShipStaticData || {};
           const draught = sd.MaximumStaticDraught ? parseFloat(sd.MaximumStaticDraught) : null;
           staticInfo[mmsi] = {
@@ -551,15 +557,16 @@ async function collectVessels() {
             draught,
             shipType: Number(sd.Type ?? 80),
           };
-          // Only log during phase 2 when we're actively hunting static data
+
           if (phase === 2 && draught && positions[mmsi]) {
             console.log(`  Static data: ${staticInfo[mmsi].name} | draught: ${draught}m`);
           }
-          // Check if we have static data for all vessels — finish early if so
+
+          // Finish early if we have draught for 70%+ of our vessels
           if (phase === 2) {
-            const withStatic = Object.keys(positions).filter(m => staticInfo[m]?.draught).length;
-            if (withStatic >= TARGET * 0.7) {
-              console.log(`  Got static data for ${withStatic} vessels — finishing early`);
+            const withDraught = Object.keys(positions).filter(m => staticInfo[m]?.draught).length;
+            if (withDraught >= TARGET * 0.7) {
+              console.log(`  Got draught for ${withDraught}/${TARGET} vessels — finishing early`);
               clearTimeout(staticTimer);
               finish();
             }
