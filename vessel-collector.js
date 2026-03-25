@@ -492,6 +492,10 @@ async function collectVessels() {
       }));
     });
 
+    // Phase tracking — phase 1: collect positions, phase 2: collect static data
+    let phase = 1;
+    let staticTimer = null;
+
     ws.on('message', (data) => {
       try {
         const msg = JSON.parse(data.toString());
@@ -505,36 +509,61 @@ async function collectVessels() {
           const lng = parseFloat(String(meta.longitude ?? pos.Longitude ?? "0"));
           if (!lat || !lng || (lat === 0 && lng === 0)) return;
           if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return;
+
           positions[mmsi] = {
             mmsi,
             name: (meta.ShipName || "").trim(),
             lat, lng,
             heading: (function() {
-                const th = Number(pos.TrueHeading ?? 511);
-                const cog = Number(pos.Cog ?? 511);
-                if (th >= 0 && th <= 360) return th;
-                if (cog >= 0 && cog <= 360) return cog;
-                return null; // truly unknown
-              })(),
+              const th = Number(pos.TrueHeading ?? 511);
+              const cog = Number(pos.Cog ?? 511);
+              if (th >= 0 && th <= 360) return th;
+              if (cog >= 0 && cog <= 360) return cog;
+              return null;
+            })(),
             speed: Number(pos.Sog ?? 0),
             destination: "",
             draught: null,
             vessel_class: "Tanker",
             last_updated: new Date().toISOString(),
           };
+
           const count = Object.keys(positions).length;
           if (count % 10 === 0) console.log(`  Collected ${count} vessels...`);
-          if (count >= TARGET) { clearTimeout(timer); finish(); }
+
+          // Phase 1 complete — now stay connected 20 more seconds for static data
+          if (count >= TARGET && phase === 1) {
+            phase = 2;
+            clearTimeout(timer);
+            console.log(`  Phase 1 complete — staying connected 20s for draught/static data...`);
+            staticTimer = setTimeout(() => {
+              finish();
+            }, 20000);
+          }
         }
 
         if (msg.MessageType === "ShipStaticData") {
           const sd = msg.Message?.ShipStaticData || {};
+          const draught = sd.MaximumStaticDraught ? parseFloat(sd.MaximumStaticDraught) : null;
           staticInfo[mmsi] = {
             name: (sd.Name || meta.ShipName || "").trim(),
             destination: (sd.Destination || "").trim(),
-            draught: sd.MaximumStaticDraught ? parseFloat(sd.MaximumStaticDraught) : null,
+            draught,
             shipType: Number(sd.Type ?? 80),
           };
+          // Only log during phase 2 when we're actively hunting static data
+          if (phase === 2 && draught && positions[mmsi]) {
+            console.log(`  Static data: ${staticInfo[mmsi].name} | draught: ${draught}m`);
+          }
+          // Check if we have static data for all vessels — finish early if so
+          if (phase === 2) {
+            const withStatic = Object.keys(positions).filter(m => staticInfo[m]?.draught).length;
+            if (withStatic >= TARGET * 0.7) {
+              console.log(`  Got static data for ${withStatic} vessels — finishing early`);
+              clearTimeout(staticTimer);
+              finish();
+            }
+          }
         }
       } catch (_) {}
     });
