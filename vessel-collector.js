@@ -795,6 +795,10 @@ async function saveToSupabase(vessels) {
     body: JSON.stringify(profileRows),
   });
   console.log(`Profiles upsert: HTTP ${prRes.status}`);
+  if (!prRes.ok) {
+    const errText = await prRes.text();
+    console.error(`Profiles upsert error: ${errText}`);
+  }
 
   // ── 7. Save new voyages ──
   if (newVoyages.length > 0) {
