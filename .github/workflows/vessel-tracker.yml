@@ -1,1 +1,30 @@
-.github/workflows/vessel-tracker.yml
+name: UFS Vessel Tracker
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  collect-vessels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install ws node-fetch@2
+
+      - name: Run vessel collector
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          AISSTREAM_KEY: ${{ secrets.AISSTREAM_KEY }}
+        run: node vessel-collector.js
