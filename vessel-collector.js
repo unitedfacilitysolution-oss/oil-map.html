@@ -10,7 +10,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const AISSTREAM_KEY = process.env.AISSTREAM_KEY;
 
 const TARGET = 100;
-const COLLECT_MS = 55000; // 55 seconds
+const COLLECT_MS = 55000;
 
 // ── REGION DETECTION ────────────────────────────────────
 function detectRegion(lat, lng) {
@@ -59,28 +59,28 @@ const REGION_TO_ROUTE = {
 };
 
 const ROUTE_META = {
-  "Persian Gulf → China via Malacca":            { destName: "China",                avgDays: 18 },
-  "Persian Gulf → Japan/Korea via Malacca":      { destName: "Japan/Korea",          avgDays: 20 },
-  "Persian Gulf → India":                        { destName: "India",                avgDays: 7  },
-  "Persian Gulf → Europe via Suez":              { destName: "Rotterdam",            avgDays: 16 },
-  "Persian Gulf → Europe via Cape":              { destName: "Rotterdam (Cape)",     avgDays: 31 },
-  "Persian Gulf → USA via Cape":                 { destName: "US Gulf Coast",        avgDays: 38 },
-  "Persian Gulf → Singapore":                    { destName: "Singapore",            avgDays: 12 },
-  "West Africa → China via Cape":                { destName: "China",                avgDays: 28 },
-  "West Africa → Europe via Atlantic":           { destName: "Rotterdam",            avgDays: 14 },
-  "West Africa → USA East Coast":                { destName: "New York",             avgDays: 16 },
-  "West Africa → India via Cape":                { destName: "Mumbai",               avgDays: 20 },
-  "Black Sea → Mediterranean via Bosphorus":     { destName: "Rotterdam",            avgDays: 12 },
-  "Russia Baltic → Europe via Oresund":          { destName: "Rotterdam",            avgDays: 5  },
-  "Russia ESPO → China/Japan":                   { destName: "Korea/Japan",          avgDays: 4  },
-  "USA Gulf → Europe via Atlantic":              { destName: "Rotterdam",            avgDays: 14 },
-  "USA Gulf → Asia via Panama":                  { destName: "Japan",                avgDays: 26 },
-  "Brazil → China via Cape":                     { destName: "China",                avgDays: 32 },
-  "Brazil → Europe via Atlantic":                { destName: "Rotterdam",            avgDays: 18 },
-  "Libya/Algeria → Europe via Mediterranean":    { destName: "Rotterdam",            avgDays: 8  },
-  "Caspian → Mediterranean via Ceyhan":          { destName: "Europe",               avgDays: 10 },
-  "Middle East → Europe via Cape (Suez bypass)": { destName: "Rotterdam (Houthi)",   avgDays: 31 },
-  "Asia → USA West Coast via Pacific":           { destName: "Los Angeles",          avgDays: 14 },
+  "Persian Gulf → China via Malacca":            { destName: "China",               avgDays: 18 },
+  "Persian Gulf → Japan/Korea via Malacca":      { destName: "Japan/Korea",         avgDays: 20 },
+  "Persian Gulf → India":                        { destName: "India",               avgDays: 7  },
+  "Persian Gulf → Europe via Suez":              { destName: "Rotterdam",           avgDays: 16 },
+  "Persian Gulf → Europe via Cape":              { destName: "Rotterdam (Cape)",    avgDays: 31 },
+  "Persian Gulf → USA via Cape":                 { destName: "US Gulf Coast",       avgDays: 38 },
+  "Persian Gulf → Singapore":                    { destName: "Singapore",           avgDays: 12 },
+  "West Africa → China via Cape":                { destName: "China",               avgDays: 28 },
+  "West Africa → Europe via Atlantic":           { destName: "Rotterdam",           avgDays: 14 },
+  "West Africa → USA East Coast":                { destName: "New York",            avgDays: 16 },
+  "West Africa → India via Cape":                { destName: "Mumbai",              avgDays: 20 },
+  "Black Sea → Mediterranean via Bosphorus":     { destName: "Rotterdam",           avgDays: 12 },
+  "Russia Baltic → Europe via Oresund":          { destName: "Rotterdam",           avgDays: 5  },
+  "Russia ESPO → China/Japan":                   { destName: "Korea/Japan",         avgDays: 4  },
+  "USA Gulf → Europe via Atlantic":              { destName: "Rotterdam",           avgDays: 14 },
+  "USA Gulf → Asia via Panama":                  { destName: "Japan",               avgDays: 26 },
+  "Brazil → China via Cape":                     { destName: "China",               avgDays: 32 },
+  "Brazil → Europe via Atlantic":                { destName: "Rotterdam",           avgDays: 18 },
+  "Libya/Algeria → Europe via Mediterranean":    { destName: "Rotterdam",           avgDays: 8  },
+  "Caspian → Mediterranean via Ceyhan":          { destName: "Europe",              avgDays: 10 },
+  "Middle East → Europe via Cape (Suez bypass)": { destName: "Rotterdam (Houthi)",  avgDays: 31 },
+  "Asia → USA West Coast via Pacific":           { destName: "Los Angeles",         avgDays: 14 },
 };
 
 const DEST_KEYWORDS = {
@@ -108,7 +108,7 @@ function predictRoute(lat, lng, destination, region) {
       }
     }
   }
-  if (["Black Sea", "Baltic Sea"].includes(region)) confidence = Math.max(confidence, 0.88);
+  if (["Black Sea","Baltic Sea"].includes(region)) confidence = Math.max(confidence, 0.88);
   if (region === "Persian Gulf")      confidence = Math.max(confidence, 0.78);
   if (region === "Strait of Malacca") confidence = Math.max(confidence, 0.72);
   if (region === "Red Sea")           confidence = Math.max(confidence, 0.70);
@@ -142,7 +142,7 @@ async function collectVessels() {
     };
 
     const timer = setTimeout(() => {
-      console.log(`Timeout reached — collected ${Object.keys(positions).length} vessels`);
+      console.log(`Timeout — collected ${Object.keys(positions).length} vessels`);
       finish();
     }, COLLECT_MS);
 
@@ -154,7 +154,7 @@ async function collectVessels() {
         APIKey: AISSTREAM_KEY,
         BoundingBoxes: [[[-90, -180], [90, 180]]],
         FilterMessageTypes: ["PositionReport", "ShipStaticData"],
-        ShipTypes: [80, 81, 82, 83, 84, 85, 86, 87, 88, 89],
+        ShipTypes: [80,81,82,83,84,85,86,87,88,89],
       }));
     });
 
@@ -171,7 +171,6 @@ async function collectVessels() {
           const lng = parseFloat(String(meta.longitude ?? pos.Longitude ?? "0"));
           if (!lat || !lng || (lat === 0 && lng === 0)) return;
           if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return;
-
           positions[mmsi] = {
             mmsi,
             name: (meta.ShipName || "").trim(),
@@ -182,7 +181,6 @@ async function collectVessels() {
             vessel_class: "Tanker",
             last_updated: new Date().toISOString(),
           };
-
           const count = Object.keys(positions).length;
           if (count % 10 === 0) console.log(`  Collected ${count} vessels...`);
           if (count >= TARGET) { clearTimeout(timer); finish(); }
@@ -217,10 +215,30 @@ async function saveToSupabase(vessels) {
     "apikey": SUPABASE_SERVICE_KEY,
     "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
     "Content-Type": "application/json",
-    "Prefer": "resolution=merge-duplicates",
+    "Prefer": "return=minimal",
   };
 
-  // 1. Upsert vessels
+  // ── 1. DELETE all existing vessels then INSERT fresh ──
+  console.log("Clearing old vessel data...");
+  const delV = await fetch(`${SUPABASE_URL}/rest/v1/vessels?id=gte.0`, {
+    method: "DELETE",
+    headers,
+  });
+  console.log(`Vessels delete: HTTP ${delV.status}`);
+
+  const delP = await fetch(`${SUPABASE_URL}/rest/v1/predictions?id=gte.0`, {
+    method: "DELETE",
+    headers,
+  });
+  console.log(`Predictions delete: HTTP ${delP.status}`);
+
+  const delPr = await fetch(`${SUPABASE_URL}/rest/v1/vessel_profiles?id=gte.0`, {
+    method: "DELETE",
+    headers,
+  });
+  console.log(`Profiles delete: HTTP ${delPr.status}`);
+
+  // ── 2. INSERT fresh vessels ───────────────────────────
   const vesselRows = vessels.map(v => ({
     mmsi: v.mmsi,
     name: v.name,
@@ -238,10 +256,10 @@ async function saveToSupabase(vessels) {
     headers,
     body: JSON.stringify(vesselRows),
   });
-  console.log(`Vessels upsert: HTTP ${vRes.status}`);
+  console.log(`Vessels insert: HTTP ${vRes.status}`);
   if (!vRes.ok) console.error(await vRes.text());
 
-  // 2. Insert vessel history
+  // ── 3. INSERT vessel history (accumulates over time) ──
   const historyRows = vessels.map(v => ({
     mmsi: v.mmsi,
     lat: v.lat,
@@ -253,12 +271,12 @@ async function saveToSupabase(vessels) {
 
   const hRes = await fetch(`${SUPABASE_URL}/rest/v1/vessel_history`, {
     method: "POST",
-    headers: { ...headers, "Prefer": "return=minimal" },
+    headers,
     body: JSON.stringify(historyRows),
   });
   console.log(`History insert: HTTP ${hRes.status}`);
 
-  // 3. Upsert predictions
+  // ── 4. INSERT fresh predictions ───────────────────────
   const predRows = vessels.map(v => {
     const region = detectRegion(v.lat, v.lng);
     const pred = predictRoute(v.lat, v.lng, v.destination, region);
@@ -277,9 +295,9 @@ async function saveToSupabase(vessels) {
     headers,
     body: JSON.stringify(predRows),
   });
-  console.log(`Predictions upsert: HTTP ${pRes.status}`);
+  console.log(`Predictions insert: HTTP ${pRes.status}`);
 
-  // 4. Upsert vessel profiles
+  // ── 5. INSERT fresh vessel profiles ───────────────────
   const profileRows = vessels.map(v => {
     const region = detectRegion(v.lat, v.lng);
     const pred = predictRoute(v.lat, v.lng, v.destination, region);
@@ -300,7 +318,7 @@ async function saveToSupabase(vessels) {
     headers,
     body: JSON.stringify(profileRows),
   });
-  console.log(`Profiles upsert: HTTP ${prRes.status}`);
+  console.log(`Profiles insert: HTTP ${prRes.status}`);
 }
 
 // ── MAIN ────────────────────────────────────────────────
