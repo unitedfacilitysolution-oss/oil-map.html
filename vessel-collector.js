@@ -466,34 +466,10 @@ async function collectVessels() {
         name: (staticInfo[v.mmsi]?.name || v.name || "UNKNOWN").trim(),
         destination: (staticInfo[v.mmsi]?.destination || "").trim(),
         draught: staticInfo[v.mmsi]?.draught || null,
-        vessel_class: detectVesselClass(
-          staticInfo[v.mmsi]?.name || v.name || "",
-          staticInfo[v.mmsi]?.shipType || 80,
-          staticInfo[v.mmsi]?.draught || null
-        ),
       }));
 
-      // Re-score with draught now available — drop anything that fails
-      const scored = result.map(v => {
-        const { score, reasons } = scoreCrudeTanker(v);
-        return { ...v, score, reasons };
-      }).filter(v => v.score >= 30);
-
-      // Sort by score descending — best vessels first
-      scored.sort((a, b) => b.score - a.score);
-
-      console.log(`Finishing collection — ${result.length} raw vessels → ${scored.length} passed scoring`);
-
-      // Log top 3 and bottom 3 for transparency
-      if (scored.length > 0) {
-        console.log(`  Top scorer: ${scored[0].name} | score: ${scored[0].score} | ${scored[0].reasons.join(', ')}`);
-        if (scored.length > 1) console.log(`  2nd: ${scored[1].name} | score: ${scored[1].score}`);
-        if (scored.length > 2) console.log(`  3rd: ${scored[2].name} | score: ${scored[2].score}`);
-        const last = scored[scored.length - 1];
-        console.log(`  Lowest kept: ${last.name} | score: ${last.score} | ${last.reasons.join(', ')}`);
-      }
-
-      resolve(scored.slice(0, TARGET));
+      console.log(`Finishing collection — ${result.length} vessels collected`);
+      resolve(result.slice(0, TARGET));
     };
 
     const timer = setTimeout(() => {
@@ -551,10 +527,6 @@ async function collectVessels() {
             vessel_class: "Tanker",
             last_updated: new Date().toISOString(),
           };
-
-          // Score this vessel — only keep if it passes threshold
-          const { score, reasons } = scoreCrudeTanker(candidate);
-          if (score < 30) return; // Drop low-scoring vessels silently
 
           positions[mmsi] = candidate;
 
@@ -616,101 +588,138 @@ async function collectVessels() {
 }
 
 // ══════════════════════════════════════════════════════════════════
-// CRUDE TANKER SCORING SYSTEM
-// Scores each vessel 0-100 to determine if it is likely
-// a genuine crude oil tanker worth tracking.
-// Minimum score to keep: 30 points
+// VESSEL CLASSIFICATION SYSTEM
+// Classifies each vessel and tracks confidence over time.
+// No vessels are dropped — all are tracked and classified.
+// Confidence grows with each confirmed observation.
+//
+// Class hierarchy:
+// VLCC         — Very Large Crude Carrier (300,000+ DWT)
+// Suezmax      — 120,000-200,000 DWT
+// Aframax      — 80,000-120,000 DWT
+// Tanker       — Small ocean tanker
+// CoastalTanker — Small coastal / inland tanker
 // ══════════════════════════════════════════════════════════════════
-function scoreCrudeTanker(vessel) {
-  let score = 0;
-  const reasons = [];
 
-  const speed = vessel.speed || 0;
-  const draught = vessel.draught || null;
-  const lat = vessel.lat;
-  const lng = vessel.lng;
+function classifyVessel(vessel, existingProfile) {
+  const speed    = vessel.speed   || 0;
+  const draught  = vessel.draught || null;
+  const lat      = vessel.lat;
+  const lng      = vessel.lng;
+  const name     = (vessel.name || "").toUpperCase();
 
-  // ── SPEED — 40 points max ──
-  if (speed >= 12) {
-    score += 40;
-    reasons.push(`speed ${speed.toFixed(1)}kts (+40)`);
-  } else if (speed >= 8) {
-    score += 30;
-    reasons.push(`speed ${speed.toFixed(1)}kts (+30)`);
-  } else if (speed >= 4) {
-    score += 15;
-    reasons.push(`speed ${speed.toFixed(1)}kts (+15)`);
-  } else {
-    score += 10;
-    reasons.push(`speed ${speed.toFixed(1)}kts (+10)`);
+  let vesselClass  = null;
+  let confidence   = 0.40; // Starting confidence for new vessels
+  let source       = [];
+  let score        = 0;
+
+  // ── SIGNAL 1: Existing profile — use what we already know ──
+  // This is the strongest signal — real observed history beats estimates
+  if (existingProfile && existingProfile.vessel_class && existingProfile.total_observations > 2) {
+    vesselClass = existingProfile.vessel_class;
+    confidence  = Math.min(0.95, (existingProfile.classification_confidence || 0.50) + 0.02);
+    source.push(`history (${existingProfile.total_observations} observations)`);
+    score += 50;
   }
 
-  // ── DRAUGHT — 40 points max ──
-  if (draught !== null) {
-    if (draught >= 14) {
-      score += 40;
-      reasons.push(`draught ${draught}m (+40)`);
+  // ── SIGNAL 2: Draught — most reliable physical measurement ──
+  if (draught !== null && draught > 0) {
+    let draughtClass;
+    let draughtConfidence;
+    let draughtScore;
+
+    if (draught >= 18) {
+      draughtClass = 'VLCC';         draughtConfidence = 0.95; draughtScore = 50;
+    } else if (draught >= 14) {
+      draughtClass = 'Suezmax';      draughtConfidence = 0.90; draughtScore = 40;
     } else if (draught >= 11) {
-      score += 30;
-      reasons.push(`draught ${draught}m (+30)`);
-    } else if (draught >= 8) {
-      score += 20;
-      reasons.push(`draught ${draught}m (+20)`);
+      draughtClass = 'Aframax';      draughtConfidence = 0.85; draughtScore = 30;
     } else if (draught >= 3.5) {
-      score += 20;
-      reasons.push(`draught ${draught}m (+20)`);
+      draughtClass = 'Tanker';       draughtConfidence = 0.70; draughtScore = 20;
     } else {
-      // Under 3.5m — too small to be a crude tanker
-      score += 0;
-      reasons.push(`draught ${draught}m too shallow (+0)`);
+      draughtClass = 'CoastalTanker'; draughtConfidence = 0.75; draughtScore = 10;
+    }
+
+    source.push(`draught ${draught}m → ${draughtClass}`);
+    score += draughtScore;
+
+    if (!vesselClass) {
+      // No prior history — draught is our best signal
+      vesselClass  = draughtClass;
+      confidence   = draughtConfidence;
+    } else if (vesselClass === draughtClass) {
+      // Draught confirms existing classification — boost confidence
+      confidence = Math.min(0.97, confidence + 0.08);
+      source.push('draught confirms history');
+    } else {
+      // Draught contradicts existing classification
+      // Only override if we have strong draught signal and low history confidence
+      const existingConfidence = existingProfile?.classification_confidence || 0.50;
+      if (draughtConfidence > existingConfidence + 0.15) {
+        vesselClass = draughtClass;
+        confidence  = draughtConfidence * 0.85; // Slight reduction for contradicting history
+        source.push(`draught overrides history (${draughtClass} vs ${existingProfile?.vessel_class})`);
+      } else {
+        // History wins — but reduce confidence slightly
+        confidence = Math.max(0.30, confidence - 0.05);
+        source.push('history retained over draught contradiction');
+      }
     }
   }
-  // Unknown draught = neutral, no penalty, no bonus
 
-  // ── POSITION REGION — 20 points max ──
+  // ── SIGNAL 3: Speed classification ──
+  let speedScore = 0;
+  if (speed >= 12) {
+    speedScore = 30;
+    source.push(`ocean speed ${speed.toFixed(1)}kts`);
+  } else if (speed >= 8) {
+    speedScore = 20;
+    source.push(`cruising ${speed.toFixed(1)}kts`);
+  } else if (speed >= 4) {
+    speedScore = 10;
+    source.push(`slow ${speed.toFixed(1)}kts`);
+  } else {
+    speedScore = 5;
+    source.push(`stationary ${speed.toFixed(1)}kts`);
+  }
+  score += speedScore;
+
+  // ── SIGNAL 4: Region context ──
   const region = detectRegion(lat, lng);
-  const openOceanRegions = [
+  const majorLaneRegions = [
     "Persian Gulf", "Arabian Sea", "Indian Ocean", "Red Sea",
     "Gulf of Aden", "Strait of Malacca", "South China Sea",
     "Japan/Korea Waters", "West Africa", "European Atlantic",
     "Cape of Good Hope", "South America Atlantic", "Gulf of Mexico",
-    "US East Coast", "US West Coast", "Open Ocean"
   ];
-  const coastalRegions = ["Mediterranean", "Black Sea", "Baltic Sea"];
-
-  if (openOceanRegions.includes(region)) {
+  if (majorLaneRegions.includes(region)) {
     score += 20;
-    reasons.push(`open ocean region: ${region} (+20)`);
-  } else if (coastalRegions.includes(region)) {
+    source.push(`major lane: ${region}`);
+  } else {
     score += 10;
-    reasons.push(`coastal region: ${region} (+10)`);
+    source.push(`region: ${region}`);
   }
 
-  // ── PORT BONUS — +40 if stationary near known crude port ──
-  if (speed < 4) {
-    const nearPort = matchPort(lat, lng);
-    if (nearPort) {
-      score += 40;
-      reasons.push(`at port: ${nearPort.name} (+40)`);
-    }
+  // ── FALLBACK: If still no class, estimate from score ──
+  if (!vesselClass) {
+    if (score >= 70)      { vesselClass = 'VLCC';          confidence = 0.45; }
+    else if (score >= 55) { vesselClass = 'Suezmax';       confidence = 0.42; }
+    else if (score >= 40) { vesselClass = 'Aframax';       confidence = 0.40; }
+    else if (score >= 25) { vesselClass = 'Tanker';        confidence = 0.38; }
+    else                  { vesselClass = 'CoastalTanker'; confidence = 0.35; }
+    source.push(`estimated from score ${score}`);
   }
 
-  return { score, reasons };
-}
+  // ── Calculate new total observations ──
+  const totalObservations = (existingProfile?.total_observations || 0) + 1;
 
-// Detect vessel class from name, ship type, and draught
-function detectVesselClass(name, shipType, draught) {
-  const n = (name || "").toUpperCase();
-  if (n.includes("VLCC") || n.includes("SUPERTANKER")) return "VLCC";
-  if (n.includes("SUEZMAX")) return "Suezmax";
-  if (n.includes("AFRAMAX")) return "Aframax";
-  // Use draught to estimate class
-  if (draught) {
-    if (draught >= 18) return "VLCC";
-    if (draught >= 14) return "Suezmax";
-    if (draught >= 11) return "Aframax";
-  }
-  return "Tanker";
+  return {
+    vesselClass,
+    confidence: Math.min(0.97, confidence),
+    source: source.join(' | '),
+    score,
+    totalObservations,
+  };
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -851,6 +860,8 @@ async function saveToSupabase(vessels) {
   // ── 3. Insert fresh vessels with draught and load status ──
   const vesselRows = vessels.map(v => {
     const { loadStatus, estimatedCargo } = calculateLoadStatus(v.draught, v.vessel_class);
+    const existingProfile = existingProfileMap[v.mmsi];
+    const classification = classifyVessel(v, existingProfile);
     return {
       mmsi: v.mmsi,
       name: v.name,
@@ -859,7 +870,7 @@ async function saveToSupabase(vessels) {
       heading: v.heading,
       speed: v.speed,
       destination: v.destination,
-      vessel_class: v.vessel_class,
+      vessel_class: classification.vesselClass,
       draught: v.draught,
       load_status: loadStatus,
       estimated_cargo_tonnes: estimatedCargo,
@@ -916,7 +927,14 @@ async function saveToSupabase(vessels) {
   });
   console.log(`Predictions insert: HTTP ${pRes.status}`);
 
-  // ── 6. Upsert vessel profiles ──
+  // ── 6. Fetch existing profiles then upsert with classification ──
+  const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/vessel_profiles?select=*`, {
+    headers: { "apikey": SUPABASE_SERVICE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}` }
+  });
+  const existingProfiles = existingRes.ok ? await existingRes.json() : [];
+  const existingProfileMap = {};
+  for (const p of existingProfiles) existingProfileMap[p.mmsi] = p;
+
   const profileRows = vessels.map(v => {
     const region = detectRegion(v.lat, v.lng);
     const { loadStatus } = calculateLoadStatus(v.draught, v.vessel_class);
@@ -925,17 +943,24 @@ async function saveToSupabase(vessels) {
       v.destination, region, loadStatus,
       v.vessel_class, [], []
     );
+
+    // Classify using confidence system
+    const classification = classifyVessel(v, existingProfileMap[v.mmsi]);
+
     return {
       mmsi: v.mmsi,
       name: v.name,
-      vessel_class: v.vessel_class,
+      vessel_class: classification.vesselClass,
+      classification_confidence: classification.confidence,
+      classification_source: classification.source,
+      total_observations: classification.totalObservations,
       last_seen_region: region,
       last_speed: v.speed,
       last_heading: v.heading,
       last_draught: v.draught,
       last_load_status: loadStatus,
       typical_routes: [pred.routeName],
-      can_use_suez: v.vessel_class !== 'VLCC',
+      can_use_suez: classification.vesselClass !== 'VLCC',
       updated_at: v.last_updated,
     };
   });
@@ -986,6 +1011,21 @@ async function saveToSupabase(vessels) {
   }
 
   console.log(`\n✅ Collected ${vessels.length} vessels`);
+
+  // Log classification summary
+  const existingResLog = await fetch(`${SUPABASE_URL}/rest/v1/vessel_profiles?select=mmsi,vessel_class,classification_confidence,total_observations`, {
+    headers: { "apikey": SUPABASE_SERVICE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}` }
+  });
+  const existingProfilesLog = existingResLog.ok ? await existingResLog.json() : [];
+  const existingProfileMapLog = {};
+  for (const p of existingProfilesLog) existingProfileMapLog[p.mmsi] = p;
+
+  const classCounts = { VLCC: 0, Suezmax: 0, Aframax: 0, Tanker: 0, CoastalTanker: 0 };
+  for (const v of vessels) {
+    const cls = classifyVessel(v, existingProfileMapLog[v.mmsi]);
+    classCounts[cls.vesselClass] = (classCounts[cls.vesselClass] || 0) + 1;
+  }
+  console.log(`  Classification: VLCC=${classCounts.VLCC} | Suezmax=${classCounts.Suezmax} | Aframax=${classCounts.Aframax} | Tanker=${classCounts.Tanker} | Coastal=${classCounts.CoastalTanker}`);
 
   // Log sample of what we got
   const sample = vessels.slice(0, 3);
