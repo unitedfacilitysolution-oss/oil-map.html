@@ -20,9 +20,10 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const AISSTREAM_KEY = process.env.AISSTREAM_KEY;
 
-const TARGET = 100;      // Final target after scoring
-const RAW_TARGET = 300;  // How many raw vessels to collect before scoring
+const TARGET = 250;      // Final target after scoring
+const RAW_TARGET = 600;  // How many raw vessels to collect before scoring
 const COLLECT_MS = 55000;
+const MAX_NOT_SEEN = 8;  // Drop locked vessel after 8 missed runs (~2 days)
 
 // ══════════════════════════════════════════════════════════════════
 // KNOWN CRUDE OIL PORTS
@@ -884,6 +885,8 @@ async function saveToSupabase(vessels) {
       load_status: loadStatus,
       estimated_cargo_tonnes: estimatedCargo,
       last_updated: v.last_updated,
+      last_seen_at: v._notSeenThisRun ? v.last_seen_at : v.last_updated,
+      times_not_seen: v._notSeenThisRun ? (v.times_not_seen || 1) : 0,
     };
   });
 
@@ -999,39 +1002,177 @@ async function saveToSupabase(vessels) {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// FETCH LOCKED VESSELS (vessels with active voyages)
+// These must be tracked regardless of what AISstream returns
+// ══════════════════════════════════════════════════════════════════
+async function fetchLockedVessels() {
+  const headers = {
+    "apikey": SUPABASE_SERVICE_KEY,
+    "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
+  };
+
+  // Get all vessels with active voyages
+  const vRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/voyages?status=eq.active&select=mmsi`,
+    { headers }
+  );
+  const activeVoyages = vRes.ok ? await vRes.json() : [];
+  const lockedMMSIs = [...new Set(activeVoyages.map(v => v.mmsi))];
+
+  // Get their last known positions from vessels table
+  if (lockedMMSIs.length === 0) return { lockedMMSIs: [], lockedVessels: [] };
+
+  const mmsiFilter = lockedMMSIs.map(m => `mmsi.eq.${m}`).join(',');
+  const posRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/vessels?or=(${mmsiFilter})&select=*`,
+    { headers }
+  );
+  const lockedVessels = posRes.ok ? await posRes.json() : [];
+
+  console.log(`  Locked vessels (active voyages): ${lockedMMSIs.length}`);
+  return { lockedMMSIs, lockedVessels };
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SEED ACTIVE VOYAGES
+// For vessels clearly mid-ocean that have no active voyage yet
+// Creates voyage records so the learning loop has something to track
+// ══════════════════════════════════════════════════════════════════
+async function seedActiveVoyages(vessels, headers) {
+  // Get MMSIs that already have active voyages
+  const vRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/voyages?status=eq.active&select=mmsi`,
+    { headers }
+  );
+  const existing = vRes.ok ? await vRes.json() : [];
+  const existingMMSIs = new Set(existing.map(v => v.mmsi));
+
+  // Find vessels that are clearly mid-ocean with no active voyage
+  const midOceanVessels = vessels.filter(v => {
+    if (existingMMSIs.has(v.mmsi)) return false; // Already has voyage
+    if (v.speed < 8) return false;                // Too slow — not mid-voyage
+    const nearPort = matchPort(v.lat, v.lng);
+    if (nearPort) return false;                   // Too close to port
+    const region = detectRegion(v.lat, v.lng);
+    const openOcean = [
+      "Persian Gulf","Arabian Sea","Indian Ocean","Red Sea",
+      "Gulf of Aden","Strait of Malacca","South China Sea",
+      "Japan/Korea Waters","West Africa","European Atlantic",
+      "Cape of Good Hope","South America Atlantic","Gulf of Mexico",
+      "Open Ocean"
+    ];
+    return openOcean.includes(region);
+  });
+
+  if (midOceanVessels.length === 0) {
+    console.log('  No new mid-ocean vessels to seed');
+    return;
+  }
+
+  const voyageRows = midOceanVessels.map(v => {
+    const region = detectRegion(v.lat, v.lng);
+    const { loadStatus, estimatedCargo } = calculateLoadStatus(v.draught, v.vessel_class);
+    const pred = predictRoute(
+      v.lat, v.lng, v.heading,
+      v.destination, region, loadStatus,
+      v.vessel_class, [], []
+    );
+    return {
+      mmsi: v.mmsi,
+      vessel_name: v.name,
+      vessel_class: v.vessel_class,
+      departure_timestamp: v.last_updated,
+      departure_lat: v.lat,
+      departure_lng: v.lng,
+      departure_port: null,
+      departure_region: region,
+      departure_draught: v.draught,
+      departure_load_status: loadStatus,
+      estimated_cargo_tonnes: estimatedCargo,
+      declared_destination: v.destination || null,
+      predicted_destination: pred.predictedDest,
+      predicted_route: pred.routeName,
+      confidence_at_departure: pred.confidence,
+      chokepoints_passed: [],
+      status: 'active',
+    };
+  });
+
+  const seedRes = await fetch(`${SUPABASE_URL}/rest/v1/voyages`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(voyageRows),
+  });
+  console.log(`  Seeded ${voyageRows.length} active voyages: HTTP ${seedRes.status}`);
+}
+
+// ══════════════════════════════════════════════════════════════════
 // MAIN
 // ══════════════════════════════════════════════════════════════════
 (async () => {
-  console.log("🛢️  UFS Vessel Collector v2.0 starting...");
-  console.log(`Target: ${TARGET} vessels | Timeout: ${COLLECT_MS / 1000}s`);
+  console.log("🛢️  UFS Vessel Collector v2.1 starting...");
+  console.log(`Target: ${TARGET} vessels | Raw target: ${RAW_TARGET} | Timeout: ${COLLECT_MS / 1000}s`);
   console.log(`Time: ${new Date().toUTCString()}\n`);
 
-  const vessels = await collectVessels();
+  // Fetch locked vessels first
+  console.log("Fetching locked vessels (active voyages)...");
+  const { lockedMMSIs, lockedVessels } = await fetchLockedVessels();
 
-  if (vessels.length === 0) {
+  // Collect new vessels from AISstream
+  const newVessels = await collectVessels();
+
+  if (newVessels.length === 0 && lockedVessels.length === 0) {
     console.error("❌ No vessels collected. Check AISstream API key.");
     process.exit(1);
   }
 
-  console.log(`\n✅ Collected ${vessels.length} vessels`);
+  // Merge locked vessels with new vessels
+  // Locked vessels take priority — they keep their slot no matter what
+  const newMMSIs = new Set(newVessels.map(v => v.mmsi));
+  const mergedVessels = [...newVessels];
 
-  // Log classification summary using profiles already loaded in saveToSupabase
+  // Add locked vessels that weren't seen in this run
+  let notSeenCount = 0;
+  for (const locked of lockedVessels) {
+    if (!newMMSIs.has(locked.mmsi)) {
+      // Vessel not seen this run — keep last known position
+      // but flag it and increment not_seen counter
+      mergedVessels.push({
+        ...locked,
+        times_not_seen: (locked.times_not_seen || 0) + 1,
+        _notSeenThisRun: true,
+      });
+      notSeenCount++;
+    }
+  }
+
+  // Take top 250
+  const finalVessels = mergedVessels.slice(0, TARGET);
+
+  console.log(`\n✅ Final vessel count: ${finalVessels.length}`);
+  console.log(`  New from AISstream: ${newVessels.length}`);
+  console.log(`  Locked (carried over): ${notSeenCount}`);
+
+  // Log classification summary
   const classCounts = { VLCC: 0, Suezmax: 0, Aframax: 0, Tanker: 0, CoastalTanker: 0 };
-  for (const v of vessels) {
+  for (const v of finalVessels) {
     const cls = classifyVessel(v, {});
     classCounts[cls.vesselClass] = (classCounts[cls.vesselClass] || 0) + 1;
   }
   console.log(`  Classification: VLCC=${classCounts.VLCC} | Suezmax=${classCounts.Suezmax} | Aframax=${classCounts.Aframax} | Tanker=${classCounts.Tanker} | Coastal=${classCounts.CoastalTanker}`);
 
-  // Log sample of what we got
-  const sample = vessels.slice(0, 3);
-  for (const v of sample) {
-    const { loadStatus, estimatedCargo } = calculateLoadStatus(v.draught, v.vessel_class);
-    console.log(`  ${v.name} | ${v.vessel_class} | speed: ${v.speed}kts | heading: ${v.heading}° | draught: ${v.draught || 'N/A'}m | load: ${loadStatus} | ~${estimatedCargo || 'N/A'}t`);
-  }
-
   console.log("\nSaving to Supabase...");
-  await saveToSupabase(vessels);
+  await saveToSupabase(finalVessels);
+
+  // Seed active voyages for mid-ocean vessels
+  const headers = {
+    "apikey": SUPABASE_SERVICE_KEY,
+    "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
+    "Content-Type": "application/json",
+    "Prefer": "return=minimal",
+  };
+  console.log("\nSeeding active voyages for mid-ocean vessels...");
+  await seedActiveVoyages(finalVessels, headers);
 
   console.log("\n🎉 Done.");
 })();
