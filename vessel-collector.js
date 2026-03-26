@@ -20,7 +20,8 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const AISSTREAM_KEY = process.env.AISSTREAM_KEY;
 
-const TARGET = 100;
+const TARGET = 100;      // Final target after scoring
+const RAW_TARGET = 300;  // How many raw vessels to collect before scoring
 const COLLECT_MS = 55000;
 
 // ══════════════════════════════════════════════════════════════════
@@ -471,8 +472,28 @@ async function collectVessels() {
           staticInfo[v.mmsi]?.draught || null
         ),
       }));
-      console.log(`Finishing collection with ${result.length} vessels`);
-      resolve(result.slice(0, TARGET));
+
+      // Re-score with draught now available — drop anything that fails
+      const scored = result.map(v => {
+        const { score, reasons } = scoreCrudeTanker(v);
+        return { ...v, score, reasons };
+      }).filter(v => v.score >= 30);
+
+      // Sort by score descending — best vessels first
+      scored.sort((a, b) => b.score - a.score);
+
+      console.log(`Finishing collection — ${result.length} raw vessels → ${scored.length} passed scoring`);
+
+      // Log top 3 and bottom 3 for transparency
+      if (scored.length > 0) {
+        console.log(`  Top scorer: ${scored[0].name} | score: ${scored[0].score} | ${scored[0].reasons.join(', ')}`);
+        if (scored.length > 1) console.log(`  2nd: ${scored[1].name} | score: ${scored[1].score}`);
+        if (scored.length > 2) console.log(`  3rd: ${scored[2].name} | score: ${scored[2].score}`);
+        const last = scored[scored.length - 1];
+        console.log(`  Lowest kept: ${last.name} | score: ${last.score} | ${last.reasons.join(', ')}`);
+      }
+
+      resolve(scored.slice(0, TARGET));
     };
 
     const timer = setTimeout(() => {
@@ -513,7 +534,7 @@ async function collectVessels() {
           if (!lat || !lng || (lat === 0 && lng === 0)) return;
           if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return;
 
-          positions[mmsi] = {
+          const candidate = {
             mmsi,
             name: (meta.ShipName || "").trim(),
             lat, lng,
@@ -531,11 +552,17 @@ async function collectVessels() {
             last_updated: new Date().toISOString(),
           };
 
+          // Score this vessel — only keep if it passes threshold
+          const { score, reasons } = scoreCrudeTanker(candidate);
+          if (score < 30) return; // Drop low-scoring vessels silently
+
+          positions[mmsi] = candidate;
+
           const count = Object.keys(positions).length;
-          if (count % 10 === 0) console.log(`  Collected ${count} vessels...`);
+          if (count % 50 === 0) console.log(`  Collected ${count} raw vessels...`);
 
           // Phase 1 complete — stay connected 20 more seconds for static data
-          if (count >= TARGET && phase === 1) {
+          if (count >= RAW_TARGET && phase === 1) {
             phase = 2;
             clearTimeout(timer);
             console.log(`  Phase 1 complete — staying connected 20s for draught/static data...`);
@@ -586,6 +613,89 @@ async function collectVessels() {
       finish();
     });
   });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// CRUDE TANKER SCORING SYSTEM
+// Scores each vessel 0-100 to determine if it is likely
+// a genuine crude oil tanker worth tracking.
+// Minimum score to keep: 30 points
+// ══════════════════════════════════════════════════════════════════
+function scoreCrudeTanker(vessel) {
+  let score = 0;
+  const reasons = [];
+
+  const speed = vessel.speed || 0;
+  const draught = vessel.draught || null;
+  const lat = vessel.lat;
+  const lng = vessel.lng;
+
+  // ── SPEED — 40 points max ──
+  if (speed >= 12) {
+    score += 40;
+    reasons.push(`speed ${speed.toFixed(1)}kts (+40)`);
+  } else if (speed >= 8) {
+    score += 30;
+    reasons.push(`speed ${speed.toFixed(1)}kts (+30)`);
+  } else if (speed >= 4) {
+    score += 15;
+    reasons.push(`speed ${speed.toFixed(1)}kts (+15)`);
+  } else {
+    score += 10;
+    reasons.push(`speed ${speed.toFixed(1)}kts (+10)`);
+  }
+
+  // ── DRAUGHT — 40 points max ──
+  if (draught !== null) {
+    if (draught >= 14) {
+      score += 40;
+      reasons.push(`draught ${draught}m (+40)`);
+    } else if (draught >= 11) {
+      score += 30;
+      reasons.push(`draught ${draught}m (+30)`);
+    } else if (draught >= 8) {
+      score += 20;
+      reasons.push(`draught ${draught}m (+20)`);
+    } else if (draught >= 3.5) {
+      score += 20;
+      reasons.push(`draught ${draught}m (+20)`);
+    } else {
+      // Under 3.5m — too small to be a crude tanker
+      score += 0;
+      reasons.push(`draught ${draught}m too shallow (+0)`);
+    }
+  }
+  // Unknown draught = neutral, no penalty, no bonus
+
+  // ── POSITION REGION — 20 points max ──
+  const region = detectRegion(lat, lng);
+  const openOceanRegions = [
+    "Persian Gulf", "Arabian Sea", "Indian Ocean", "Red Sea",
+    "Gulf of Aden", "Strait of Malacca", "South China Sea",
+    "Japan/Korea Waters", "West Africa", "European Atlantic",
+    "Cape of Good Hope", "South America Atlantic", "Gulf of Mexico",
+    "US East Coast", "US West Coast", "Open Ocean"
+  ];
+  const coastalRegions = ["Mediterranean", "Black Sea", "Baltic Sea"];
+
+  if (openOceanRegions.includes(region)) {
+    score += 20;
+    reasons.push(`open ocean region: ${region} (+20)`);
+  } else if (coastalRegions.includes(region)) {
+    score += 10;
+    reasons.push(`coastal region: ${region} (+10)`);
+  }
+
+  // ── PORT BONUS — +40 if stationary near known crude port ──
+  if (speed < 4) {
+    const nearPort = matchPort(lat, lng);
+    if (nearPort) {
+      score += 40;
+      reasons.push(`at port: ${nearPort.name} (+40)`);
+    }
+  }
+
+  return { score, reasons };
 }
 
 // Detect vessel class from name, ship type, and draught
