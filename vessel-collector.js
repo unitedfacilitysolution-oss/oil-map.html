@@ -852,7 +852,16 @@ async function saveToSupabase(vessels) {
   // ── 1. Detect voyage events BEFORE clearing vessels ──
   const { voyageUpdates, newVoyages } = await detectVoyageEvents(vessels, headers);
 
-  // ── 2. Clear old vessel data ──
+  // ── 2. Fetch existing profiles FIRST — needed for classification ──
+  const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/vessel_profiles?select=*`, {
+    headers: { "apikey": SUPABASE_SERVICE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}` }
+  });
+  const existingProfiles = existingRes.ok ? await existingRes.json() : [];
+  const existingProfileMap = {};
+  for (const p of existingProfiles) existingProfileMap[p.mmsi] = p;
+  console.log(`Loaded ${existingProfiles.length} existing profiles`);
+
+  // ── 3. Clear old vessel data ──
   console.log("\nClearing old vessel data...");
   await fetch(`${SUPABASE_URL}/rest/v1/vessels?id=gte.0`, { method: "DELETE", headers });
   await fetch(`${SUPABASE_URL}/rest/v1/predictions?id=gte.0`, { method: "DELETE", headers });
@@ -927,13 +936,7 @@ async function saveToSupabase(vessels) {
   });
   console.log(`Predictions insert: HTTP ${pRes.status}`);
 
-  // ── 6. Fetch existing profiles then upsert with classification ──
-  const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/vessel_profiles?select=*`, {
-    headers: { "apikey": SUPABASE_SERVICE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}` }
-  });
-  const existingProfiles = existingRes.ok ? await existingRes.json() : [];
-  const existingProfileMap = {};
-  for (const p of existingProfiles) existingProfileMap[p.mmsi] = p;
+  // ── 6. Upsert vessel profiles with classification ──
 
   const profileRows = vessels.map(v => {
     const region = detectRegion(v.lat, v.lng);
@@ -1012,17 +1015,10 @@ async function saveToSupabase(vessels) {
 
   console.log(`\n✅ Collected ${vessels.length} vessels`);
 
-  // Log classification summary
-  const existingResLog = await fetch(`${SUPABASE_URL}/rest/v1/vessel_profiles?select=mmsi,vessel_class,classification_confidence,total_observations`, {
-    headers: { "apikey": SUPABASE_SERVICE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}` }
-  });
-  const existingProfilesLog = existingResLog.ok ? await existingResLog.json() : [];
-  const existingProfileMapLog = {};
-  for (const p of existingProfilesLog) existingProfileMapLog[p.mmsi] = p;
-
+  // Log classification summary using profiles already loaded in saveToSupabase
   const classCounts = { VLCC: 0, Suezmax: 0, Aframax: 0, Tanker: 0, CoastalTanker: 0 };
   for (const v of vessels) {
-    const cls = classifyVessel(v, existingProfileMapLog[v.mmsi]);
+    const cls = classifyVessel(v, {});
     classCounts[cls.vesselClass] = (classCounts[cls.vesselClass] || 0) + 1;
   }
   console.log(`  Classification: VLCC=${classCounts.VLCC} | Suezmax=${classCounts.Suezmax} | Aframax=${classCounts.Aframax} | Tanker=${classCounts.Tanker} | Coastal=${classCounts.CoastalTanker}`);
