@@ -10679,6 +10679,209 @@ var smallFields = [
   };
 
   // Intelligence-driven route matching — mirrors Edge Function logic
+  // ══════════════════════════════════════════════════════════════════
+  // RIVER INTELLIGENCE SYSTEM
+  // Detects when vessels are on rivers, approaching river mouths,
+  // or heading toward inland ports. Uses RIVER_SYSTEMS waypoints
+  // built into the map for precise routing.
+  // ══════════════════════════════════════════════════════════════════
+
+  // River mouth entry points — where ocean meets river
+  var RIVER_MOUTHS = [
+    { river: 'Rhine',                    lat: 51.978, lng: 4.117,   entryIdx: 0,  radiusNm: 60  },
+    { river: 'Elbe',                     lat: 53.880, lng: 8.620,   entryIdx: 0,  radiusNm: 50  },
+    { river: 'Seine',                    lat: 49.490, lng: 0.107,   entryIdx: 0,  radiusNm: 50  },
+    { river: 'Rhine-Main-Danube Canal',  lat: 44.170, lng: 28.650,  entryIdx: 22, radiusNm: 60  },
+    { river: 'Mississippi',              lat: 29.100, lng: -89.250, entryIdx: 0,  radiusNm: 80  },
+    { river: 'St. Lawrence Seaway',      lat: 49.170, lng: -65.000, entryIdx: 0,  radiusNm: 80  },
+    { river: 'Yangtze',                  lat: 31.390, lng: 121.870, entryIdx: 0,  radiusNm: 60  },
+    { river: 'Amazon',                   lat: -1.460, lng: -48.510, entryIdx: 0,  radiusNm: 80  },
+    { river: 'Paraná / Río de la Plata', lat: -34.600, lng: -58.370,entryIdx: 0,  radiusNm: 60  },
+    { river: 'Volga',                    lat: 43.400, lng: 51.900,  entryIdx: 0,  radiusNm: 60  },
+    { river: 'Irrawaddy',                lat: 16.850, lng: 96.180,  entryIdx: 0,  radiusNm: 50  },
+    { river: 'Congo',                    lat: -5.800, lng: 12.450,  entryIdx: 0,  radiusNm: 50  },
+  ];
+
+  // How far up each river each vessel class can go
+  // Index refers to the waypoint index in RIVER_SYSTEMS array for that river
+  var RIVER_CLASS_LIMITS = {
+    'Rhine': {
+      'VLCC':     { portIdx: 1,  portName: 'Rotterdam' },           // Too large — Rotterdam only
+      'Suezmax':  { portIdx: 1,  portName: 'Rotterdam / Antwerp' }, // Rotterdam / Antwerp area
+      'Aframax':  { portIdx: 5,  portName: 'Duisburg' },            // Can reach Duisburg
+      'Tanker':   { portIdx: 10, portName: 'Cologne / Mainz' },     // Can reach Cologne/Mainz
+      'Coastal':  { portIdx: 14, portName: 'Basel' },               // Can go all the way to Basel
+    },
+    'Elbe': {
+      'VLCC':     { portIdx: 1,  portName: 'Hamburg' },
+      'Suezmax':  { portIdx: 1,  portName: 'Hamburg' },
+      'Aframax':  { portIdx: 1,  portName: 'Hamburg' },
+      'Tanker':   { portIdx: 3,  portName: 'Magdeburg' },
+      'Coastal':  { portIdx: 4,  portName: 'Dresden' },
+    },
+    'Seine': {
+      'VLCC':     { portIdx: 0,  portName: 'Le Havre' },
+      'Suezmax':  { portIdx: 1,  portName: 'Rouen' },
+      'Aframax':  { portIdx: 1,  portName: 'Rouen' },
+      'Tanker':   { portIdx: 2,  portName: 'Paris' },
+      'Coastal':  { portIdx: 2,  portName: 'Paris' },
+    },
+    'Mississippi': {
+      'VLCC':     { portIdx: 1,  portName: 'New Orleans' },
+      'Suezmax':  { portIdx: 2,  portName: 'Baton Rouge' },
+      'Aframax':  { portIdx: 2,  portName: 'Baton Rouge' },
+      'Tanker':   { portIdx: 4,  portName: 'Memphis' },
+      'Coastal':  { portIdx: 5,  portName: 'St. Louis' },
+    },
+    'Yangtze': {
+      'VLCC':     { portIdx: 0,  portName: 'Shanghai' },
+      'Suezmax':  { portIdx: 1,  portName: 'Nanjing' },
+      'Aframax':  { portIdx: 2,  portName: 'Wuhan' },
+      'Tanker':   { portIdx: 3,  portName: 'Yichang' },
+      'Coastal':  { portIdx: 4,  portName: 'Chongqing' },
+    },
+  };
+
+  // Default river class limits for rivers without specific entries
+  var RIVER_CLASS_DEFAULT = {
+    'VLCC':    0,
+    'Suezmax': 1,
+    'Aframax': 2,
+    'Tanker':  3,
+    'Coastal': 4,
+  };
+
+  // Get the RIVER_SYSTEMS entry for a named river
+  function getRiverSystem(riverName) {
+    for (var i = 0; i < RIVER_SYSTEMS.length; i++) {
+      if (RIVER_SYSTEMS[i].name === riverName) return RIVER_SYSTEMS[i];
+    }
+    return null;
+  }
+
+  // Check if a vessel is currently ON a river (within 15nm of any river waypoint)
+  function detectVesselOnRiver(vessel) {
+    var bestMatch = null;
+    var bestDist = Infinity;
+    for (var r = 0; r < RIVER_SYSTEMS.length; r++) {
+      var river = RIVER_SYSTEMS[r];
+      for (var w = 0; w < river.waypoints.length; w++) {
+        var d = haversineNm(vessel.lat, vessel.lng, river.waypoints[w][0], river.waypoints[w][1]);
+        if (d < 15 && d < bestDist) {
+          bestDist = d;
+          bestMatch = { river: river, waypointIdx: w, distNm: d };
+        }
+      }
+    }
+    return bestMatch;
+  }
+
+  // Check if a vessel in open ocean is heading toward a river mouth
+  // Returns river mouth info if heading within 35 degrees and within range
+  function detectRiverApproach(vessel) {
+    if (!vessel.heading || vessel.heading < 0 || vessel.heading > 360) return null;
+    if (vessel.speed < 3) return null; // Not moving meaningfully
+
+    var bestApproach = null;
+    var bestScore = Infinity;
+
+    for (var m = 0; m < RIVER_MOUTHS.length; m++) {
+      var mouth = RIVER_MOUTHS[m];
+      var distToMouth = haversineNm(vessel.lat, vessel.lng, mouth.lat, mouth.lng);
+
+      // Only check if vessel is within approach range
+      if (distToMouth > 600) continue;
+
+      // Calculate bearing from vessel to river mouth
+      var dLng = (mouth.lng - vessel.lng) * Math.PI / 180;
+      var lat1r = vessel.lat * Math.PI / 180;
+      var lat2r = mouth.lat * Math.PI / 180;
+      var y = Math.sin(dLng) * Math.cos(lat2r);
+      var x = Math.cos(lat1r) * Math.sin(lat2r) - Math.sin(lat1r) * Math.cos(lat2r) * Math.cos(dLng);
+      var bearingToMouth = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+
+      // Check how closely vessel heading aligns with bearing to river mouth
+      var headingDiff = Math.abs(vessel.heading - bearingToMouth);
+      if (headingDiff > 180) headingDiff = 360 - headingDiff;
+
+      // Within 35 degrees = approaching the river mouth
+      if (headingDiff <= 35) {
+        var score = distToMouth + headingDiff * 5;
+        if (score < bestScore) {
+          bestScore = score;
+          bestApproach = { mouth: mouth, distNm: distToMouth, headingDiff: headingDiff };
+        }
+      }
+    }
+    return bestApproach;
+  }
+
+  // Get river route waypoints for a vessel based on class
+  // Determines direction (upstream/downstream) from heading
+  // Returns waypoints from vessel position to appropriate inland port
+  function getRiverRouteWaypoints(vessel, riverSystem, currentWaypointIdx) {
+    var vesselClass = vessel.vessel_class || 'Tanker';
+    var riverName = riverSystem.name;
+    var waypoints = riverSystem.waypoints;
+
+    // Determine destination waypoint index based on vessel class
+    var destIdx;
+    if (RIVER_CLASS_LIMITS[riverName] && RIVER_CLASS_LIMITS[riverName][vesselClass]) {
+      destIdx = RIVER_CLASS_LIMITS[riverName][vesselClass].portIdx;
+    } else {
+      var defaultIdx = RIVER_CLASS_DEFAULT[vesselClass] || 2;
+      destIdx = Math.min(defaultIdx * 3, waypoints.length - 1);
+    }
+
+    // Determine direction from heading
+    // If heading roughly toward the end of the river (upstream), go upstream
+    // If heading toward the start (downstream toward mouth), go downstream
+    var mouthWpt = waypoints[0];
+    var upstreamWpt = waypoints[Math.min(5, waypoints.length - 1)];
+    var bearingToMouth = getBearing(vessel.lat, vessel.lng, mouthWpt[0], mouthWpt[1]);
+    var bearingUpstream = getBearing(vessel.lat, vessel.lng, upstreamWpt[0], upstreamWpt[1]);
+    var diffToMouth = Math.abs(vessel.heading - bearingToMouth);
+    if (diffToMouth > 180) diffToMouth = 360 - diffToMouth;
+    var diffUpstream = Math.abs(vessel.heading - bearingUpstream);
+    if (diffUpstream > 180) diffUpstream = 360 - diffUpstream;
+
+    var goingUpstream = diffUpstream < diffToMouth;
+
+    var routeWpts = [[vessel.lat, vessel.lng]];
+    if (goingUpstream) {
+      // Going deeper into the river — add waypoints from current position to dest
+      for (var i = currentWaypointIdx + 1; i <= Math.min(destIdx, waypoints.length - 1); i++) {
+        routeWpts.push(waypoints[i]);
+      }
+    } else {
+      // Going downstream toward mouth
+      for (var i = currentWaypointIdx - 1; i >= 0; i--) {
+        routeWpts.push(waypoints[i]);
+      }
+    }
+
+    return { waypoints: routeWpts, goingUpstream: goingUpstream };
+  }
+
+  // Helper: get bearing between two points
+  function getBearing(lat1, lng1, lat2, lng2) {
+    var dLng = (lng2 - lng1) * Math.PI / 180;
+    var lat1r = lat1 * Math.PI / 180;
+    var lat2r = lat2 * Math.PI / 180;
+    var y = Math.sin(dLng) * Math.cos(lat2r);
+    var x = Math.cos(lat1r) * Math.sin(lat2r) - Math.sin(lat1r) * Math.cos(lat2r) * Math.cos(dLng);
+    return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+  }
+
+  // Get inland port name for popup display
+  function getInlandDestName(vessel, riverName) {
+    var vesselClass = vessel.vessel_class || 'Tanker';
+    if (RIVER_CLASS_LIMITS[riverName] && RIVER_CLASS_LIMITS[riverName][vesselClass]) {
+      return RIVER_CLASS_LIMITS[riverName][vesselClass].portName;
+    }
+    return 'Inland Port';
+  }
+
   function matchRoute(vessel, prediction, profile) {
     // 1. Use prediction route_name from Edge Function (already has full intelligence)
     var routeName = prediction ? (prediction.route_name || '') : '';
@@ -10774,7 +10977,7 @@ var smallFields = [
     return { idx: closestIdx, distNm: minDist };
   }
 
-  // Draw accurate maritime route
+  // Draw accurate maritime or river route
   function drawCargoRoute(vessel, prediction, profile) {
     // Clear previous route
     if (_cargoRoute) {
@@ -10782,6 +10985,116 @@ var smallFields = [
       _cargoRoute = null;
     }
 
+    var lines = [];
+
+    // ── RIVER INTELLIGENCE CHECK ──────────────────────────────────
+    // Step 1: Is vessel currently ON a river?
+    var onRiver = detectVesselOnRiver(vessel);
+    if (onRiver) {
+      var river = onRiver.river;
+      var riverRoute = getRiverRouteWaypoints(vessel, river, onRiver.waypointIdx);
+      var routeWpts = riverRoute.waypoints;
+
+      if (routeWpts.length > 1) {
+        // Draw gold traveled line (short segment behind vessel on river)
+        var traveledRiver = L.polyline(
+          [routeWpts[0], routeWpts[0]], // just a point — no history on river
+          { color: '#c9a84c', weight: 2.5, opacity: 0.85 }
+        ).addTo(map);
+        lines.push(traveledRiver);
+
+        // Draw white dashed predicted river route
+        var predictedRiver = L.polyline(routeWpts, {
+          color: '#29b6f6',
+          weight: 2.5,
+          opacity: 0.8,
+          dashArray: '8,5',
+        }).addTo(map);
+        lines.push(predictedRiver);
+
+        // If heading downstream (toward ocean) — extend into ocean route
+        if (!riverRoute.goingUpstream && routeWpts.length > 1) {
+          var matched = matchRoute(vessel, prediction, profile);
+          if (matched) {
+            var oceanStart = river.waypoints[0]; // River mouth
+            var oceanWpts = [oceanStart];
+            var oceanRoute = matched.route.waypoints;
+            // Find nearest ocean waypoint to river mouth
+            var nearestOceanIdx = 0;
+            var nearestDist = Infinity;
+            for (var oi = 0; oi < oceanRoute.length; oi++) {
+              var od = haversineNm(oceanStart[0], oceanStart[1], oceanRoute[oi][0], oceanRoute[oi][1]);
+              if (od < nearestDist) { nearestDist = od; nearestOceanIdx = oi; }
+            }
+            for (var oi = nearestOceanIdx; oi < oceanRoute.length; oi++) {
+              oceanWpts.push(oceanRoute[oi]);
+            }
+            if (oceanWpts.length > 1) {
+              var oceanExtension = L.polyline(oceanWpts, {
+                color: '#ffffff',
+                weight: 2,
+                opacity: 0.5,
+                dashArray: '8,5',
+              }).addTo(map);
+              lines.push(oceanExtension);
+            }
+          }
+        }
+      }
+
+      _cargoRoute = lines;
+      return;
+    }
+
+    // Step 2: Is vessel in open ocean approaching a river mouth?
+    var riverApproach = detectRiverApproach(vessel);
+    if (riverApproach) {
+      var mouth = riverApproach.mouth;
+      var riverSystem = getRiverSystem(mouth.river);
+
+      if (riverSystem) {
+        var vesselClass = vessel.vessel_class || 'Tanker';
+        var destPortName = getInlandDestName(vessel, mouth.river);
+
+        // Get class-limited destination waypoint
+        var destWptIdx = 1; // default
+        if (RIVER_CLASS_LIMITS[mouth.river] && RIVER_CLASS_LIMITS[mouth.river][vesselClass]) {
+          destWptIdx = RIVER_CLASS_LIMITS[mouth.river][vesselClass].portIdx;
+        }
+
+        // Build route: vessel → river mouth → up river to class-appropriate port
+        var approachWpts = [[vessel.lat, vessel.lng], [mouth.lat, mouth.lng]];
+        // Add river waypoints from mouth to destination
+        var riverWpts = riverSystem.waypoints.slice(0, Math.min(destWptIdx + 1, riverSystem.waypoints.length));
+        var fullRoute = approachWpts.concat(riverWpts.slice(1));
+
+        // Draw approach line (gold — already traveled portion if close)
+        if (riverApproach.distNm < 200) {
+          var traveledApproach = L.polyline([[vessel.lat, vessel.lng], [mouth.lat, mouth.lng]], {
+            color: '#c9a84c',
+            weight: 2.5,
+            opacity: 0.85,
+          }).addTo(map);
+          lines.push(traveledApproach);
+        }
+
+        // Draw predicted river route (blue dashed)
+        if (fullRoute.length > 1) {
+          var predictedApproach = L.polyline(fullRoute, {
+            color: '#29b6f6',
+            weight: 2.5,
+            opacity: 0.8,
+            dashArray: '8,5',
+          }).addTo(map);
+          lines.push(predictedApproach);
+        }
+
+        _cargoRoute = lines;
+        return;
+      }
+    }
+
+    // ── OCEAN ROUTE DRAWING (existing logic) ─────────────────────
     var matched = matchRoute(vessel, prediction, profile);
     if (!matched) return;
 
@@ -10790,10 +11103,11 @@ var smallFields = [
     var progress = findVesselProgress(vessel, waypoints);
     var progressIdx = progress.idx;
     var closestDistNm = progress.distNm;
-    var lines = [];
 
-    // Only draw traveled portion if vessel is within 400nm of closest waypoint
-    // This prevents drawing lines that cross continents for wrong route matches
+    // Don't draw if vessel is too far off route (wrong match)
+    if (closestDistNm > 400) { _cargoRoute = lines; return; }
+
+    // Draw gold traveled portion
     if (progressIdx > 0 && closestDistNm < 400) {
       var traveledWpts = waypoints.slice(0, progressIdx + 1);
       traveledWpts[traveledWpts.length - 1] = [vessel.lat, vessel.lng];
