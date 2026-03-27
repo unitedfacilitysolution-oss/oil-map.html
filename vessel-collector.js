@@ -1,15 +1,14 @@
 // ══════════════════════════════════════════════════════════════════
-// UFS VESSEL COLLECTOR v2.2
+// UFS VESSEL COLLECTOR v2.3
 // United Facility Solution — Market Intelligence Platform
 //
-// What this does every 6 hours:
-// 1. Collects 250 crude tanker positions from AISstream
-// 2. Classifies vessels using confidence-based system
+// What this does every 2 hours:
+// 1. Collects 500 crude tanker positions from AISstream
+//    using global bounding boxes targeting major crude routes
+// 2. Classifies vessels by size with confidence scoring
 // 3. Detects voyage starts and ends
-// 4. On voyage end — scores prediction and saves learning outcome
-// 5. Updates vessel profiles with confirmed routes
-// 6. Seeds active voyages for mid-ocean vessels
-// 7. Saves everything to Supabase
+// 4. Closes the learning loop when voyages complete
+// 5. Seeds new voyage records for mid-ocean vessels
 // ══════════════════════════════════════════════════════════════════
 
 const WebSocket = require('ws');
@@ -19,916 +18,1016 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const AISSTREAM_KEY = process.env.AISSTREAM_KEY;
 
-const TARGET = 250;
-const RAW_TARGET = 600;
-const COLLECT_MS = 55000;
-const MAX_NOT_SEEN = 8;
+const TARGET = 500;       // Vessels to track
+const RAW_TARGET = 1200;  // Raw collected before filtering/dedup
+const COLLECTION_TIMEOUT = 100000; // 100 seconds Phase 1
+const STATIC_TIMEOUT = 25000;      // 25 seconds Phase 2
 
 // ══════════════════════════════════════════════════════════════════
-// KNOWN CRUDE OIL PORTS
+// GLOBAL BOUNDING BOXES — All major crude oil shipping regions
+// Format: [[minLat, minLon], [maxLat, maxLon]]
+// ══════════════════════════════════════════════════════════════════
+const BOUNDING_BOXES = [
+  // Persian Gulf / Strait of Hormuz
+  [[21.0, 48.0], [30.5, 62.0]],
+  // Red Sea / Gulf of Aden / Bab el-Mandeb
+  [[10.0, 40.0], [28.0, 52.0]],
+  // Arabian Sea
+  [[5.0, 55.0], [25.0, 78.0]],
+  // Strait of Malacca / Singapore
+  [[-2.0, 95.0], [10.0, 106.0]],
+  // South China Sea
+  [[0.0, 105.0], [25.0, 125.0]],
+  // Indian Ocean — Western lanes
+  [[-35.0, 50.0], [5.0, 80.0]],
+  // Indian Ocean — Eastern lanes
+  [[-35.0, 80.0], [5.0, 100.0]],
+  // West Africa / Gulf of Guinea
+  [[-8.0, -5.0], [12.0, 15.0]],
+  // Cape of Good Hope corridor
+  [[-42.0, 10.0], [-28.0, 40.0]],
+  // Gulf of Mexico / Caribbean
+  [[14.0, -100.0], [32.0, -60.0]],
+  // North Sea / Baltic — Russian crude routes
+  [[50.0, -5.0], [66.0, 32.0]],
+  // Mediterranean
+  [[30.0, -6.0], [47.0, 37.0]],
+  // Black Sea
+  [[40.5, 27.5], [47.0, 42.0]],
+  // Atlantic — VLCC transit lanes
+  [[-10.0, -30.0], [20.0, -5.0]],
+  // Pacific — Asia bound routes
+  [[-5.0, 125.0], [35.0, 150.0]],
+];
+
+// ══════════════════════════════════════════════════════════════════
+// KNOWN CRUDE OIL PORTS — For voyage detection and arrival matching
 // ══════════════════════════════════════════════════════════════════
 const KNOWN_PORTS = [
-  { name: "Ras Tanura",         lat: 26.64,  lng: 50.16,  region: "Persian Gulf" },
-  { name: "Ju'aymah",           lat: 26.94,  lng: 49.97,  region: "Persian Gulf" },
-  { name: "Kharg Island",       lat: 29.25,  lng: 50.32,  region: "Persian Gulf" },
-  { name: "Basra Oil Terminal", lat: 29.68,  lng: 48.82,  region: "Persian Gulf" },
-  { name: "Mina Al Ahmadi",     lat: 29.05,  lng: 48.15,  region: "Persian Gulf" },
-  { name: "Ruwais",             lat: 24.11,  lng: 52.73,  region: "Persian Gulf" },
-  { name: "Fujairah",           lat: 25.12,  lng: 56.36,  region: "Persian Gulf" },
-  { name: "Sohar",              lat: 24.34,  lng: 56.75,  region: "Arabian Sea"  },
-  { name: "Muscat",             lat: 23.62,  lng: 58.59,  region: "Arabian Sea"  },
-  { name: "Yanbu",              lat: 24.09,  lng: 38.06,  region: "Red Sea"      },
-  { name: "Jeddah",             lat: 21.49,  lng: 39.17,  region: "Red Sea"      },
-  { name: "Ain Sukhna",         lat: 29.59,  lng: 32.35,  region: "Red Sea"      },
-  { name: "Bonny Terminal",     lat: 4.45,   lng: 7.15,   region: "West Africa"  },
-  { name: "Forcados",           lat: 5.35,   lng: 5.07,   region: "West Africa"  },
-  { name: "Escravos",           lat: 5.59,   lng: 5.14,   region: "West Africa"  },
-  { name: "Cabinda",            lat: -5.55,  lng: 12.19,  region: "West Africa"  },
-  { name: "Malongo",            lat: -5.61,  lng: 12.08,  region: "West Africa"  },
-  { name: "Djeno Terminal",     lat: -4.83,  lng: 11.85,  region: "West Africa"  },
-  { name: "Rotterdam",          lat: 51.89,  lng: 4.10,   region: "European Atlantic" },
-  { name: "Antwerp",            lat: 51.26,  lng: 4.42,   region: "European Atlantic" },
-  { name: "Amsterdam",          lat: 52.37,  lng: 4.90,   region: "European Atlantic" },
-  { name: "Fos-sur-Mer",        lat: 43.41,  lng: 4.94,   region: "Mediterranean" },
-  { name: "Augusta",            lat: 37.22,  lng: 15.22,  region: "Mediterranean" },
-  { name: "Trieste",            lat: 45.65,  lng: 13.78,  region: "Mediterranean" },
-  { name: "Novorossiysk",       lat: 44.72,  lng: 37.77,  region: "Black Sea"    },
-  { name: "Primorsk",           lat: 60.36,  lng: 28.62,  region: "Baltic Sea"   },
-  { name: "Ust-Luga",           lat: 59.68,  lng: 28.44,  region: "Baltic Sea"   },
-  { name: "Ningbo",             lat: 29.87,  lng: 121.55, region: "South China Sea" },
-  { name: "Qingdao",            lat: 36.07,  lng: 120.38, region: "South China Sea" },
-  { name: "Dalian",             lat: 38.91,  lng: 121.64, region: "South China Sea" },
-  { name: "Shanghai",           lat: 31.23,  lng: 121.47, region: "South China Sea" },
-  { name: "Zhoushan",           lat: 30.02,  lng: 122.10, region: "South China Sea" },
-  { name: "Ulsan",              lat: 35.54,  lng: 129.32, region: "Japan/Korea Waters" },
-  { name: "Yeosu",              lat: 34.74,  lng: 127.74, region: "Japan/Korea Waters" },
-  { name: "Chiba",              lat: 35.61,  lng: 140.05, region: "Japan/Korea Waters" },
-  { name: "Yokohama",           lat: 35.44,  lng: 139.64, region: "Japan/Korea Waters" },
-  { name: "Singapore",          lat: 1.29,   lng: 103.85, region: "Strait of Malacca" },
-  { name: "Jamnagar",           lat: 22.47,  lng: 69.07,  region: "Arabian Sea"  },
-  { name: "Mumbai",             lat: 18.93,  lng: 72.84,  region: "Arabian Sea"  },
-  { name: "Paradip",            lat: 20.26,  lng: 86.67,  region: "Indian Ocean" },
-  { name: "Port Arthur",        lat: 29.87,  lng: -93.94, region: "Gulf of Mexico" },
-  { name: "Houston",            lat: 29.75,  lng: -95.37, region: "Gulf of Mexico" },
-  { name: "Louisiana Offshore", lat: 28.88,  lng: -90.02, region: "Gulf of Mexico" },
-  { name: "Corpus Christi",     lat: 27.81,  lng: -97.40, region: "Gulf of Mexico" },
-  { name: "Santos",             lat: -23.94, lng: -46.33, region: "South America Atlantic" },
-  { name: "Aratu",              lat: -12.77, lng: -38.48, region: "South America Atlantic" },
+  // Middle East
+  { name: 'Ras Tanura', lat: 26.64, lng: 50.16, region: 'Persian Gulf', type: 'export' },
+  { name: 'Kharg Island', lat: 29.24, lng: 50.32, region: 'Persian Gulf', type: 'export' },
+  { name: 'Basra Oil Terminal', lat: 29.68, lng: 48.82, region: 'Persian Gulf', type: 'export' },
+  { name: 'Fujairah', lat: 25.11, lng: 56.34, region: 'Persian Gulf', type: 'transit' },
+  { name: 'Jebel Ali', lat: 24.98, lng: 55.06, region: 'Persian Gulf', type: 'transit' },
+  { name: 'Mina Al Ahmadi', lat: 29.07, lng: 48.13, region: 'Persian Gulf', type: 'export' },
+  { name: 'Al Juaymah', lat: 26.90, lng: 49.95, region: 'Persian Gulf', type: 'export' },
+  { name: 'Bandar Abbas', lat: 27.18, lng: 56.27, region: 'Persian Gulf', type: 'export' },
+  { name: 'Lavan Island', lat: 26.81, lng: 53.36, region: 'Persian Gulf', type: 'export' },
+  { name: 'Sidi Kerir', lat: 31.12, lng: 29.67, region: 'Mediterranean', type: 'export' },
+  // Asia Pacific
+  { name: 'Ningbo', lat: 29.86, lng: 121.55, region: 'China', type: 'import' },
+  { name: 'Qingdao', lat: 36.07, lng: 120.38, region: 'China', type: 'import' },
+  { name: 'Dalian', lat: 38.91, lng: 121.65, region: 'China', type: 'import' },
+  { name: 'Tianjin', lat: 38.99, lng: 117.74, region: 'China', type: 'import' },
+  { name: 'Zhoushan', lat: 29.99, lng: 122.21, region: 'China', type: 'import' },
+  { name: 'Ulsan', lat: 35.53, lng: 129.39, region: 'South Korea', type: 'import' },
+  { name: 'Yeosu', lat: 34.74, lng: 127.74, region: 'South Korea', type: 'import' },
+  { name: 'Chiba', lat: 35.58, lng: 140.10, region: 'Japan', type: 'import' },
+  { name: 'Mizushima', lat: 34.52, lng: 133.76, region: 'Japan', type: 'import' },
+  { name: 'Yokkaichi', lat: 34.97, lng: 136.62, region: 'Japan', type: 'import' },
+  { name: 'Singapore', lat: 1.27, lng: 103.82, region: 'Singapore', type: 'transit' },
+  { name: 'Port Dickson', lat: 2.52, lng: 101.80, region: 'Malaysia', type: 'import' },
+  // Europe
+  { name: 'Rotterdam', lat: 51.92, lng: 4.48, region: 'Northwest Europe', type: 'import' },
+  { name: 'Antwerp', lat: 51.27, lng: 4.39, region: 'Northwest Europe', type: 'import' },
+  { name: 'Amsterdam', lat: 52.37, lng: 4.90, region: 'Northwest Europe', type: 'import' },
+  { name: 'Wilhelmshaven', lat: 53.53, lng: 8.15, region: 'Northwest Europe', type: 'import' },
+  { name: 'Trieste', lat: 45.65, lng: 13.78, region: 'Mediterranean', type: 'import' },
+  { name: 'Augusta', lat: 37.22, lng: 15.22, region: 'Mediterranean', type: 'import' },
+  { name: 'Lavera', lat: 43.40, lng: 5.02, region: 'Mediterranean', type: 'import' },
+  // Africa
+  { name: 'Bonny Terminal', lat: 4.45, lng: 7.16, region: 'West Africa', type: 'export' },
+  { name: 'Forcados', lat: 5.35, lng: 5.37, region: 'West Africa', type: 'export' },
+  { name: 'Escravos', lat: 5.54, lng: 5.14, region: 'West Africa', type: 'export' },
+  { name: 'Djeno Terminal', lat: -4.73, lng: 11.89, region: 'West Africa', type: 'export' },
+  { name: 'Cabinda', lat: -5.56, lng: 12.19, region: 'West Africa', type: 'export' },
+  { name: 'Ras Lanuf', lat: 30.50, lng: 18.57, region: 'North Africa', type: 'export' },
+  { name: 'Es Sider', lat: 30.63, lng: 18.66, region: 'North Africa', type: 'export' },
+  // Americas
+  { name: 'Houston', lat: 29.73, lng: -95.27, region: 'US Gulf', type: 'import' },
+  { name: 'Corpus Christi', lat: 27.81, lng: -97.39, region: 'US Gulf', type: 'export' },
+  { name: 'Louisiana Offshore', lat: 28.88, lng: -90.03, region: 'US Gulf', type: 'import' },
+  { name: 'Freeport', lat: 28.95, lng: -95.36, region: 'US Gulf', type: 'export' },
+  { name: 'Puerto La Cruz', lat: 10.21, lng: -64.63, region: 'Caribbean', type: 'export' },
+  { name: 'Jose Terminal', lat: 10.19, lng: -64.98, region: 'Caribbean', type: 'export' },
+  // Russia / Black Sea
+  { name: 'Novorossiysk', lat: 44.72, lng: 37.77, region: 'Black Sea', type: 'export' },
+  { name: 'Primorsk', lat: 60.37, lng: 28.62, region: 'Baltic', type: 'export' },
+  { name: 'Ust-Luga', lat: 59.68, lng: 28.43, region: 'Baltic', type: 'export' },
+  { name: 'Kozmino', lat: 42.75, lng: 133.07, region: 'Pacific Russia', type: 'export' },
+  // India
+  { name: 'Vadinar', lat: 22.46, lng: 69.78, region: 'India', type: 'import' },
+  { name: 'Mundra', lat: 22.84, lng: 69.71, region: 'India', type: 'import' },
+  { name: 'Paradip', lat: 20.26, lng: 86.67, region: 'India', type: 'import' },
 ];
 
 // ══════════════════════════════════════════════════════════════════
-// MARITIME CHOKEPOINTS
+// CHOKEPOINTS — For route detection during voyages
 // ══════════════════════════════════════════════════════════════════
 const CHOKEPOINTS = [
-  { name: "Strait of Hormuz",  lat: 26.57,  lng: 56.50,  radiusNm: 60  },
-  { name: "Strait of Malacca", lat: 1.30,   lng: 103.80, radiusNm: 80  },
-  { name: "Suez Canal",        lat: 30.70,  lng: 32.50,  radiusNm: 80  },
-  { name: "Bab el-Mandeb",     lat: 12.50,  lng: 43.50,  radiusNm: 60  },
-  { name: "Cape of Good Hope", lat: -34.50, lng: 26.00,  radiusNm: 150 },
-  { name: "Bosphorus",         lat: 41.10,  lng: 29.00,  radiusNm: 50  },
-  { name: "Gibraltar",         lat: 35.95,  lng: -5.45,  radiusNm: 60  },
-  { name: "Oresund Strait",    lat: 56.00,  lng: 12.60,  radiusNm: 60  },
-  { name: "Panama Canal",      lat: 9.20,   lng: -79.90, radiusNm: 60  },
-  { name: "Florida Strait",    lat: 24.50,  lng: -80.50, radiusNm: 80  },
+  { name: 'Strait of Hormuz', lat: 26.56, lng: 56.25, radius: 120 },
+  { name: 'Strait of Malacca', lat: 1.80, lng: 102.50, radius: 150 },
+  { name: 'Suez Canal', lat: 30.58, lng: 32.34, radius: 100 },
+  { name: 'Bab el-Mandeb', lat: 12.58, lng: 43.42, radius: 100 },
+  { name: 'Strait of Gibraltar', lat: 35.97, lng: -5.44, radius: 100 },
+  { name: 'Cape of Good Hope', lat: -34.36, lng: 18.47, radius: 200 },
+  { name: 'Bosphorus Strait', lat: 41.12, lng: 29.07, radius: 80 },
+  { name: 'Danish Straits', lat: 57.50, lng: 10.60, radius: 120 },
+  { name: 'Panama Canal', lat: 9.08, lng: -79.68, radius: 80 },
+  { name: 'Lombok Strait', lat: -8.78, lng: 115.74, radius: 100 },
 ];
 
 // ══════════════════════════════════════════════════════════════════
-// VESSEL CLASS DATA
+// OCEAN REGIONS — For classification and prediction
 // ══════════════════════════════════════════════════════════════════
-const VESSEL_CLASS_DATA = {
-  'VLCC':          { maxDraught: 22.0, maxCargo: 300000, minDraught: 8.0  },
-  'Suezmax':       { maxDraught: 17.0, maxCargo: 150000, minDraught: 6.0  },
-  'Aframax':       { maxDraught: 14.5, maxCargo: 100000, minDraught: 5.5  },
-  'Tanker':        { maxDraught: 14.0, maxCargo: 80000,  minDraught: 5.0  },
-  'CoastalTanker': { maxDraught: 8.0,  maxCargo: 25000,  minDraught: 2.0  },
-};
+function getRegion(lat, lng) {
+  if (lat >= 21 && lat <= 31 && lng >= 48 && lng <= 62) return 'Persian Gulf';
+  if (lat >= 10 && lat <= 28 && lng >= 40 && lng <= 52) return 'Red Sea';
+  if (lat >= 5 && lat <= 25 && lng >= 55 && lng <= 78) return 'Arabian Sea';
+  if (lat >= -2 && lat <= 10 && lng >= 95 && lng <= 106) return 'Strait of Malacca';
+  if (lat >= 0 && lat <= 25 && lng >= 105 && lng <= 125) return 'South China Sea';
+  if (lat >= 25 && lat <= 40 && lng >= 115 && lng <= 125) return 'East China Sea';
+  if (lat >= 28 && lat <= 42 && lng >= 117 && lng <= 135) return 'China';
+  if (lat >= 30 && lat <= 40 && lng >= 125 && lng <= 132) return 'South Korea';
+  if (lat >= 30 && lat <= 42 && lng >= 129 && lng <= 145) return 'Japan';
+  if (lat >= -35 && lat <= 5 && lng >= 50 && lng <= 100) return 'Indian Ocean';
+  if (lat >= -8 && lat <= 12 && lng >= -5 && lng <= 15) return 'West Africa';
+  if (lat >= -42 && lat <= -28 && lng >= 10 && lng <= 40) return 'Cape of Good Hope';
+  if (lat >= 14 && lat <= 32 && lng >= -100 && lng <= -60) return 'Gulf of Mexico';
+  if (lat >= 50 && lat <= 66 && lng >= -5 && lng <= 32) return 'North Sea / Baltic';
+  if (lat >= 40 && lat <= 47 && lng >= 27 && lng <= 42) return 'Black Sea';
+  if (lat >= 30 && lat <= 47 && lng >= -6 && lng <= 37) return 'Mediterranean';
+  if (lat >= -10 && lat <= 20 && lng >= -30 && lng <= -5) return 'Atlantic';
+  if (lat >= 48 && lat <= 62 && lng >= -15 && lng <= 5) return 'Northwest Europe';
+  if (lat >= 20 && lat <= 32 && lng >= 29 && lng <= 40) return 'North Africa';
+  if (lat >= 10 && lat <= 25 && lng >= 60 && lng <= 80) return 'India';
+  return 'Open Ocean';
+}
 
 // ══════════════════════════════════════════════════════════════════
-// MARITIME ROUTES
+// VESSEL CLASSIFICATION — Confidence-based, uses profile history
 // ══════════════════════════════════════════════════════════════════
-const ROUTES = {
-  "Persian Gulf → China via Malacca":            { destName: "China",              avgDays: 18, waypoints: [[26.5,50.5],[23.5,59.5],[20.0,63.0],[8.5,75.0],[1.3,103.8],[10.0,111.0],[25.0,120.0],[30.0,122.0]] },
-  "Persian Gulf → Japan/Korea via Malacca":      { destName: "Japan/Korea",        avgDays: 20, waypoints: [[26.5,50.5],[23.5,59.5],[20.0,63.0],[1.3,103.8],[18.0,118.0],[35.0,136.0]] },
-  "Persian Gulf → India":                        { destName: "India",              avgDays: 7,  waypoints: [[26.5,50.5],[23.5,59.5],[22.0,63.0],[19.1,72.8]] },
-  "Persian Gulf → Europe via Suez":              { destName: "Rotterdam",          avgDays: 16, waypoints: [[26.5,50.5],[23.5,59.5],[12.5,43.5],[30.7,32.5],[35.9,-5.7],[51.9,4.1]] },
-  "Persian Gulf → Europe via Cape":              { destName: "Rotterdam (Cape)",   avgDays: 31, waypoints: [[26.5,50.5],[23.5,59.5],[-34.5,26.0],[35.9,-5.7],[51.9,4.1]] },
-  "Persian Gulf → USA via Cape":                 { destName: "US Gulf Coast",      avgDays: 38, waypoints: [[26.5,50.5],[23.5,59.5],[-34.5,26.0],[25.0,-65.0],[29.7,-93.9]] },
-  "Persian Gulf → Singapore":                    { destName: "Singapore",          avgDays: 12, waypoints: [[26.5,50.5],[23.5,59.5],[1.3,103.8]] },
-  "Persian Gulf → Australia":                    { destName: "Australia",          avgDays: 22, waypoints: [[26.5,50.5],[23.5,59.5],[-20.0,100.0],[-33.9,151.2]] },
-  "West Africa → China via Cape":                { destName: "China",              avgDays: 28, waypoints: [[4.5,5.0],[-34.5,26.0],[1.3,103.8],[30.0,122.0]] },
-  "West Africa → Europe via Atlantic":           { destName: "Rotterdam",          avgDays: 14, waypoints: [[4.5,5.0],[35.9,-5.7],[51.9,4.1]] },
-  "West Africa → USA East Coast":                { destName: "New York",           avgDays: 16, waypoints: [[4.5,5.0],[17.0,-30.0],[40.7,-74.0]] },
-  "West Africa → India via Cape":                { destName: "Mumbai",             avgDays: 20, waypoints: [[4.5,5.0],[-34.5,26.0],[19.1,72.8]] },
-  "Black Sea → Mediterranean via Bosphorus":     { destName: "Rotterdam",          avgDays: 12, waypoints: [[44.7,37.8],[41.5,29.5],[35.9,-5.7],[51.9,4.1]] },
-  "Russia Baltic → Europe via Oresund":          { destName: "Rotterdam",          avgDays: 5,  waypoints: [[60.4,28.6],[56.0,12.6],[51.9,4.1]] },
-  "Russia ESPO → China/Japan":                   { destName: "Korea/Japan",        avgDays: 4,  waypoints: [[42.7,133.1],[35.0,129.0]] },
-  "USA Gulf → Europe via Atlantic":              { destName: "Rotterdam",          avgDays: 14, waypoints: [[29.7,-93.9],[25.5,-80.0],[35.0,-70.0],[51.9,4.1]] },
-  "USA Gulf → Asia via Panama":                  { destName: "Japan",              avgDays: 26, waypoints: [[29.7,-93.9],[9.2,-79.9],[15.0,-120.0],[35.0,136.0]] },
-  "Brazil → China via Cape":                     { destName: "China",              avgDays: 32, waypoints: [[-23.9,-46.3],[-34.5,26.0],[1.3,103.8],[30.0,122.0]] },
-  "Brazil → Europe via Atlantic":                { destName: "Rotterdam",          avgDays: 18, waypoints: [[-23.9,-46.3],[35.9,-5.7],[51.9,4.1]] },
-  "North Sea → Global via English Channel":      { destName: "Rotterdam",          avgDays: 2,  waypoints: [[60.5,-1.3],[51.9,4.1]] },
-  "Libya/Algeria → Europe via Mediterranean":    { destName: "Rotterdam",          avgDays: 8,  waypoints: [[32.9,13.2],[35.9,-5.7],[51.9,4.1]] },
-  "Caspian → Mediterranean via Ceyhan":          { destName: "Europe",             avgDays: 10, waypoints: [[40.8,36.9],[35.9,-5.7],[51.9,4.1]] },
-  "Middle East → Europe via Cape (Suez bypass)": { destName: "Rotterdam (Houthi)", avgDays: 31, waypoints: [[26.5,50.5],[-34.5,26.0],[35.9,-5.7],[51.9,4.1]] },
-  "Canada Pacific → Asia":                       { destName: "Japan",              avgDays: 12, waypoints: [[49.2,-123.1],[35.0,136.0]] },
-  "Asia → USA West Coast via Pacific":           { destName: "Los Angeles",        avgDays: 14, waypoints: [[35.0,136.0],[25.0,-160.0],[33.7,-118.2]] },
-};
+function classifyVessel(vessel, existingProfile) {
+  let vesselClass = 'Tanker';
+  let confidence = 0.3;
+  let source = 'default';
 
-const DEST_KEYWORDS = {
-  "Persian Gulf → China via Malacca":       ["CHINA","NINGBO","QINGDAO","DALIAN","TIANJIN","SHANGHAI","ZHOUSHAN"],
-  "Persian Gulf → Japan/Korea via Malacca": ["JAPAN","KOREA","ULSAN","YOKOHAMA","CHIBA","BUSAN","NAGOYA"],
-  "Persian Gulf → India":                   ["INDIA","MUMBAI","JAMNAGAR","VADINAR","PARADIP","SIKKA"],
-  "Persian Gulf → Europe via Suez":         ["ROTTERDAM","EUROPE","ANTWERP","AMSTERDAM","HAMBURG","TRIESTE"],
-  "Persian Gulf → USA via Cape":            ["HOUSTON","PORT ARTHUR","TEXAS","LOUISIANA"],
-  "Persian Gulf → Singapore":               ["SINGAPORE","JURONG"],
-  "West Africa → USA East Coast":           ["NEW YORK","PHILADELPHIA","BALTIMORE"],
-  "Russia Baltic → Europe via Oresund":     ["PRIMORSK","UST-LUGA","ROTTERDAM"],
-  "Russia ESPO → China/Japan":              ["KOZMINO","KOREA","JAPAN","CHINA"],
-};
+  // Step 1 — Use existing profile if available and confident
+  if (existingProfile && existingProfile.vessel_class && existingProfile.classification_confidence > 0.5) {
+    vesselClass = existingProfile.vessel_class;
+    confidence = Math.min(existingProfile.classification_confidence + 0.02, 0.98);
+    source = 'profile_history';
+
+    // Step 2 — Confirm or challenge with draught if available
+    if (vessel.draught && vessel.draught > 3.5) {
+      const draughtClass = classifyByDraught(vessel.draught);
+      if (draughtClass === vesselClass) {
+        confidence = Math.min(confidence + 0.05, 0.98);
+        source = 'profile_confirmed_by_draught';
+      } else if (confidence < 0.7) {
+        vesselClass = draughtClass;
+        confidence = 0.55;
+        source = 'draught_override';
+      }
+    }
+    return { vesselClass, confidence, source };
+  }
+
+  // Step 3 — No strong profile, use draught as primary signal
+  if (vessel.draught && vessel.draught > 3.5) {
+    vesselClass = classifyByDraught(vessel.draught);
+    confidence = 0.65;
+    source = 'draught';
+    // Speed confirmation
+    if (vessel.speed >= 10) {
+      confidence = Math.min(confidence + 0.08, 0.98);
+      source = 'draught_speed_confirmed';
+    }
+    return { vesselClass, confidence, source };
+  }
+
+  // Step 4 — No draught, use speed + region
+  const region = getRegion(vessel.lat, vessel.lng);
+  if (vessel.speed >= 12) {
+    vesselClass = 'Tanker';
+    confidence = 0.40;
+    source = 'speed_region';
+    if (['Persian Gulf', 'Arabian Sea', 'Indian Ocean', 'South China Sea'].includes(region)) {
+      confidence = 0.45;
+      source = 'speed_crude_region';
+    }
+  } else if (vessel.speed >= 8) {
+    vesselClass = 'Tanker';
+    confidence = 0.35;
+    source = 'speed_moderate';
+  } else {
+    vesselClass = 'Coastal';
+    confidence = 0.30;
+    source = 'low_speed_default';
+  }
+
+  return { vesselClass, confidence, source };
+}
+
+function classifyByDraught(draught) {
+  if (draught >= 18) return 'VLCC';
+  if (draught >= 14) return 'Suezmax';
+  if (draught >= 11) return 'Aframax';
+  if (draught >= 3.5) return 'Tanker';
+  return 'Coastal';
+}
+
+function estimateCargo(vessel, vesselClass) {
+  if (!vessel.draught || vessel.draught < 3.5) return { tonnes: null, loadStatus: 'Unknown' };
+
+  const maxDraught = { VLCC: 22.5, Suezmax: 20.0, Aframax: 14.5, Tanker: 12.0, Coastal: 8.0 };
+  const maxTonnes = { VLCC: 300000, Suezmax: 160000, Aframax: 110000, Tanker: 50000, Coastal: 20000 };
+
+  const max = maxDraught[vesselClass] || 12.0;
+  const maxT = maxTonnes[vesselClass] || 50000;
+  const ratio = Math.min(vessel.draught / max, 1.0);
+  const tonnes = Math.round(ratio * maxT);
+  const loadStatus = ratio > 0.75 ? 'Loaded' : ratio > 0.40 ? 'Partial' : 'Ballast';
+
+  return { tonnes, loadStatus };
+}
 
 // ══════════════════════════════════════════════════════════════════
-// UTILITY FUNCTIONS
+// DISTANCE CALCULATION
 // ══════════════════════════════════════════════════════════════════
-
 function haversineNm(lat1, lng1, lat2, lng2) {
-  const R = 3440.065;
+  const R = 3440.065; // nautical miles
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function projectPosition(lat, lng, headingDeg, distanceNm) {
-  const R = 3440.065;
-  const d = distanceNm / R;
-  const heading = headingDeg * Math.PI / 180;
-  const lat1 = lat * Math.PI / 180;
-  const lng1 = lng * Math.PI / 180;
-  const lat2 = Math.asin(Math.sin(lat1)*Math.cos(d) + Math.cos(lat1)*Math.sin(d)*Math.cos(heading));
-  const lng2 = lng1 + Math.atan2(Math.sin(heading)*Math.sin(d)*Math.cos(lat1), Math.cos(d)-Math.sin(lat1)*Math.sin(lat2));
-  return { lat: lat2 * 180/Math.PI, lng: lng2 * 180/Math.PI };
-}
-
-function detectRegion(lat, lng) {
-  if (lng > 47 && lng < 60 && lat > 22 && lat < 30) return "Persian Gulf";
-  if (lng > 32 && lng < 44 && lat > 12 && lat < 30) return "Red Sea";
-  if (lng > 44 && lng < 60 && lat > 10 && lat < 16) return "Gulf of Aden";
-  if (lng > 55 && lng < 78 && lat > 5  && lat < 25) return "Arabian Sea";
-  if (lng > 60 && lng < 100 && lat > -20 && lat < 5) return "Indian Ocean";
-  if (lng > 100 && lng < 112 && lat > -6 && lat < 6) return "Strait of Malacca";
-  if (lng > 110 && lng < 125 && lat > 0  && lat < 25) return "South China Sea";
-  if (lng > 120 && lng < 150 && lat > 25 && lat < 45) return "Japan/Korea Waters";
-  if (lng > -20 && lng < 20  && lat > -5 && lat < 15) return "West Africa";
-  if (lng > -15 && lng < 10  && lat > 35 && lat < 60) return "European Atlantic";
-  if (lng > -6  && lng < 42  && lat > 30 && lat < 46) return "Mediterranean";
-  if (lng > 27  && lng < 42  && lat > 40 && lat < 47) return "Black Sea";
-  if (lng > 9   && lng < 30  && lat > 54 && lat < 66) return "Baltic Sea";
-  if (lng > 10  && lng < 40  && lat > -40 && lat < -25) return "Cape of Good Hope";
-  if (lng > -100 && lng < -80 && lat > 18 && lat < 31) return "Gulf of Mexico";
-  if (lng > -82  && lng < -60 && lat > 25 && lat < 45) return "US East Coast";
-  if (lng > -130 && lng < -115 && lat > 30 && lat < 50) return "US West Coast";
-  if (lng > -55  && lng < -30 && lat > -35 && lat < 5) return "South America Atlantic";
-  return "Open Ocean";
-}
-
-function matchPort(lat, lng) {
+// ══════════════════════════════════════════════════════════════════
+// NEAREST PORT DETECTION
+// ══════════════════════════════════════════════════════════════════
+function getNearestPort(lat, lng, radiusNm = 50) {
   let nearest = null;
-  let minDist = 50;
+  let minDist = Infinity;
   for (const port of KNOWN_PORTS) {
     const dist = haversineNm(lat, lng, port.lat, port.lng);
-    if (dist < minDist) { minDist = dist; nearest = port; }
+    if (dist < radiusNm && dist < minDist) {
+      minDist = dist;
+      nearest = { ...port, distNm: dist };
+    }
   }
   return nearest;
 }
 
-function detectChokepoints(lat, lng) {
+// ══════════════════════════════════════════════════════════════════
+// CHOKEPOINT DETECTION
+// ══════════════════════════════════════════════════════════════════
+function getChokepointsPassed(lat, lng) {
   const passed = [];
   for (const cp of CHOKEPOINTS) {
-    if (haversineNm(lat, lng, cp.lat, cp.lng) <= cp.radiusNm) passed.push(cp.name);
+    if (haversineNm(lat, lng, cp.lat, cp.lng) <= cp.radius) {
+      passed.push(cp.name);
+    }
   }
   return passed;
 }
 
-function calculateLoadStatus(draught, vesselClass) {
-  const cls = VESSEL_CLASS_DATA[vesselClass] || VESSEL_CLASS_DATA['Tanker'];
-  if (!draught || draught <= 0) return { loadStatus: 'unknown', estimatedCargo: null };
-  const range = cls.maxDraught - cls.minDraught;
-  const frac = Math.max(0, Math.min(1, (draught - cls.minDraught) / range));
-  const estimatedCargo = Math.round(frac * cls.maxCargo);
-  const loadStatus = frac > 0.80 ? 'loaded' : frac > 0.35 ? 'partial' : 'ballast';
-  return { loadStatus, estimatedCargo };
+// ══════════════════════════════════════════════════════════════════
+// HEADING PROJECTION — Project nose forward, score route waypoints
+// ══════════════════════════════════════════════════════════════════
+const ROUTE_WAYPOINTS = [
+  { name: 'Rotterdam', lat: 51.92, lng: 4.48, routes: ['West Africa → Europe via Atlantic', 'Russia Baltic → Europe', 'Persian Gulf → Europe via Suez'] },
+  { name: 'Ningbo', lat: 29.86, lng: 121.55, routes: ['Persian Gulf → China via Malacca', 'West Africa → China via Cape'] },
+  { name: 'Qingdao', lat: 36.07, lng: 120.38, routes: ['Persian Gulf → China via Malacca', 'Russia Pacific → China'] },
+  { name: 'Ulsan', lat: 35.53, lng: 129.39, routes: ['Persian Gulf → South Korea', 'West Africa → Asia via Cape'] },
+  { name: 'Singapore', lat: 1.27, lng: 103.82, routes: ['Persian Gulf → China via Malacca', 'West Africa → Asia via Cape'] },
+  { name: 'Houston', lat: 29.73, lng: -95.27, routes: ['West Africa → US Gulf', 'Venezuela → US Gulf'] },
+  { name: 'Ras Tanura', lat: 26.64, lng: 50.16, routes: ['Persian Gulf → China via Malacca', 'Persian Gulf → Europe via Suez'] },
+  { name: 'Novorossiysk', lat: 44.72, lng: 37.77, routes: ['Black Sea → Mediterranean'] },
+  { name: 'Primorsk', lat: 60.37, lng: 28.62, routes: ['Russia Baltic → Europe'] },
+  { name: 'Bonny Terminal', lat: 4.45, lng: 7.16, routes: ['West Africa → Europe via Atlantic', 'West Africa → Asia via Cape'] },
+  { name: 'Suez Canal', lat: 30.58, lng: 32.34, routes: ['Persian Gulf → Europe via Suez', 'Persian Gulf → Mediterranean'] },
+  { name: 'Cape of Good Hope', lat: -34.36, lng: 18.47, routes: ['West Africa → Asia via Cape', 'Persian Gulf → Europe via Cape'] },
+  { name: 'Strait of Malacca', lat: 1.80, lng: 102.50, routes: ['Persian Gulf → China via Malacca', 'Persian Gulf → South Korea', 'Persian Gulf → Japan'] },
+  { name: 'Chiba', lat: 35.58, lng: 140.10, routes: ['Persian Gulf → Japan', 'West Africa → Asia via Cape'] },
+  { name: 'Vadinar', lat: 22.46, lng: 69.78, routes: ['Persian Gulf → India', 'West Africa → India'] },
+];
+
+function projectHeading(lat, lng, headingDeg, distanceNm) {
+  const R = 3440.065;
+  const lat1 = lat * Math.PI / 180;
+  const lng1 = lng * Math.PI / 180;
+  const brng = headingDeg * Math.PI / 180;
+  const d = distanceNm / R;
+  const lat2 = Math.asin(Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(brng));
+  const lng2 = lng1 + Math.atan2(Math.sin(brng) * Math.sin(d) * Math.cos(lat1), Math.cos(d) - Math.sin(lat1) * Math.sin(lat2));
+  return { lat: lat2 * 180 / Math.PI, lng: lng2 * 180 / Math.PI };
 }
 
-// ══════════════════════════════════════════════════════════════════
-// PREDICTION ENGINE
-// ══════════════════════════════════════════════════════════════════
-function predictRoute(lat, lng, heading, destination, region, loadStatus, vesselClass, typicalRoutes, chokepointsPassed) {
-  let routeName = null;
-  let confidence = 0.40;
-  let signals = [];
+function getHeadingPrediction(lat, lng, heading) {
+  if (!heading || heading < 0 || heading > 360) return null;
 
-  // Signal 1: Heading projection
-  const projections = (heading !== null && heading >= 0 && heading <= 360) ? [
-    projectPosition(lat, lng, heading, 500),
-    projectPosition(lat, lng, heading, 1000),
-    projectPosition(lat, lng, heading, 2000),
-    projectPosition(lat, lng, heading, 3000),
-  ] : [];
+  const distances = [300, 600, 1200, 2000, 3500];
+  const routeHits = {};
 
-  let bestHeadingRoute = null;
-  let bestHeadingScore = 0;
-
-  for (const [rName, rData] of Object.entries(ROUTES)) {
-    let hits = 0;
-    for (const proj of projections) {
-      for (const wp of rData.waypoints) {
-        if (haversineNm(proj.lat, proj.lng, wp[0], wp[1]) < 300) hits++;
-      }
-    }
-    for (const cp of CHOKEPOINTS) {
-      for (const proj of projections) {
-        if (haversineNm(proj.lat, proj.lng, cp.lat, cp.lng) < 200) {
-          for (const wp of rData.waypoints) {
-            if (haversineNm(cp.lat, cp.lng, wp[0], wp[1]) < 150) hits += 2;
-          }
+  for (const dist of distances) {
+    const projected = projectHeading(lat, lng, heading, dist);
+    for (const waypoint of ROUTE_WAYPOINTS) {
+      const distToWaypoint = haversineNm(projected.lat, projected.lng, waypoint.lat, waypoint.lng);
+      const tolerance = dist * 0.18;
+      if (distToWaypoint <= tolerance) {
+        for (const route of waypoint.routes) {
+          routeHits[route] = (routeHits[route] || 0) + 1;
         }
       }
     }
-    if (hits > bestHeadingScore) { bestHeadingScore = hits; bestHeadingRoute = rName; }
   }
 
-  if (bestHeadingRoute && bestHeadingScore >= 2) {
-    routeName = bestHeadingRoute;
-    confidence = 0.60 + Math.min(0.20, bestHeadingScore * 0.03);
-    signals.push(`heading projection (${bestHeadingScore} hits)`);
-  }
-
-  // Signal 2: Chokepoints passed
-  if (chokepointsPassed?.length > 0) {
-    for (const cp of chokepointsPassed) {
-      if (cp === "Suez Canal")        { routeName = "Persian Gulf → Europe via Suez"; confidence = Math.max(confidence, 0.88); signals.push("Suez confirmed"); }
-      if (cp === "Strait of Malacca") { routeName = heading > 0 && heading < 100 ? "Persian Gulf → China via Malacca" : "Persian Gulf → Japan/Korea via Malacca"; confidence = Math.max(confidence, 0.85); signals.push("Malacca confirmed"); }
-      if (cp === "Cape of Good Hope") { routeName = heading > 0 && heading < 120 ? "West Africa → China via Cape" : "Persian Gulf → Europe via Cape"; confidence = Math.max(confidence, 0.82); signals.push("Cape confirmed"); }
-      if (cp === "Bosphorus")         { routeName = "Black Sea → Mediterranean via Bosphorus"; confidence = Math.max(confidence, 0.90); signals.push("Bosphorus confirmed"); }
-      if (cp === "Oresund Strait")    { routeName = "Russia Baltic → Europe via Oresund"; confidence = Math.max(confidence, 0.90); signals.push("Oresund confirmed"); }
-      if (cp === "Panama Canal")      { routeName = "USA Gulf → Asia via Panama"; confidence = Math.max(confidence, 0.88); signals.push("Panama confirmed"); }
-      if (cp === "Strait of Hormuz")  {
-        if (heading > 200 && heading < 320) { routeName = "Persian Gulf → Europe via Suez"; confidence = Math.max(confidence, 0.75); }
-        else { routeName = "Persian Gulf → China via Malacca"; confidence = Math.max(confidence, 0.72); }
-        signals.push("Hormuz confirmed");
-      }
-    }
-  }
-
-  // Signal 3: Load status
-  if (loadStatus === 'loaded' && region === 'Persian Gulf') { confidence = Math.max(confidence, 0.65); signals.push("loaded + Persian Gulf"); }
-
-  // Signal 4: Declared destination
-  const destUpper = (destination || "").toUpperCase().trim();
-  if (destUpper.length > 2) {
-    for (const [rName, keywords] of Object.entries(DEST_KEYWORDS)) {
-      if (keywords.some(kw => destUpper.includes(kw))) {
-        if (!routeName) routeName = rName;
-        confidence = Math.max(confidence, 0.78);
-        signals.push(`declared: ${destination}`);
-        break;
-      }
-    }
-  }
-
-  // Signal 5: Vessel history
-  if (!routeName && typicalRoutes?.length > 0 && ROUTES[typicalRoutes[0]]) {
-    routeName = typicalRoutes[0];
-    confidence = Math.max(confidence, 0.65);
-    signals.push("vessel history");
-  }
-
-  // Signal 6: Region fallback
-  if (!routeName) {
-    const fallback = {
-      "Persian Gulf": "Persian Gulf → China via Malacca",
-      "Red Sea": "Persian Gulf → Europe via Suez",
-      "Gulf of Aden": "Persian Gulf → Europe via Suez",
-      "Arabian Sea": "Persian Gulf → India",
-      "Indian Ocean": "Persian Gulf → China via Malacca",
-      "Strait of Malacca": "Persian Gulf → China via Malacca",
-      "South China Sea": "Persian Gulf → China via Malacca",
-      "Japan/Korea Waters": "Persian Gulf → Japan/Korea via Malacca",
-      "West Africa": "West Africa → Europe via Atlantic",
-      "European Atlantic": "West Africa → Europe via Atlantic",
-      "Mediterranean": "Libya/Algeria → Europe via Mediterranean",
-      "Black Sea": "Black Sea → Mediterranean via Bosphorus",
-      "Baltic Sea": "Russia Baltic → Europe via Oresund",
-      "Cape of Good Hope": "West Africa → China via Cape",
-      "Gulf of Mexico": "USA Gulf → Europe via Atlantic",
-      "US East Coast": "USA Gulf → Europe via Atlantic",
-      "US West Coast": "Asia → USA West Coast via Pacific",
-      "South America Atlantic": "Brazil → Europe via Atlantic",
-      "Open Ocean": "West Africa → Europe via Atlantic",
-    };
-    routeName = fallback[region] || "West Africa → Europe via Atlantic";
-    signals.push(`region fallback: ${region}`);
-  }
-
-  const route = ROUTES[routeName] || ROUTES["West Africa → Europe via Atlantic"];
-  return { routeName, confidence: Math.min(confidence, 0.95), predictedDest: route.destName, etaDays: route.avgDays, signals };
+  if (Object.keys(routeHits).length === 0) return null;
+  const bestRoute = Object.entries(routeHits).sort((a, b) => b[1] - a[1])[0];
+  const confidence = Math.min(0.45 + bestRoute[1] * 0.07, 0.78);
+  return { route: bestRoute[0], confidence };
 }
 
 // ══════════════════════════════════════════════════════════════════
-// VESSEL CLASSIFICATION SYSTEM
+// ROUTE PREDICTION ENGINE — Multi-signal hierarchy
 // ══════════════════════════════════════════════════════════════════
-function classifyVessel(vessel, existingProfile) {
-  const speed   = vessel.speed  || 0;
-  const draught = vessel.draught || null;
-  const lat     = vessel.lat;
-  const lng     = vessel.lng;
+const REGION_ROUTES = {
+  'Persian Gulf': { route: 'Persian Gulf → China via Malacca', dest: 'China', confidence: 0.42 },
+  'Arabian Sea': { route: 'Persian Gulf → India', dest: 'India', confidence: 0.40 },
+  'Red Sea': { route: 'Persian Gulf → Europe via Suez', dest: 'Europe', confidence: 0.44 },
+  'West Africa': { route: 'West Africa → Europe via Atlantic', dest: 'Europe', confidence: 0.40 },
+  'Black Sea': { route: 'Black Sea → Mediterranean', dest: 'Mediterranean', confidence: 0.52 },
+  'North Sea / Baltic': { route: 'Russia Baltic → Europe', dest: 'Northwest Europe', confidence: 0.50 },
+  'Mediterranean': { route: 'Persian Gulf → Europe via Suez', dest: 'Europe', confidence: 0.38 },
+  'South China Sea': { route: 'Persian Gulf → China via Malacca', dest: 'China', confidence: 0.45 },
+  'Gulf of Mexico': { route: 'Venezuela → US Gulf', dest: 'US Gulf', confidence: 0.48 },
+  'Indian Ocean': { route: 'Persian Gulf → India', dest: 'India', confidence: 0.38 },
+  'Cape of Good Hope': { route: 'West Africa → Asia via Cape', dest: 'Asia', confidence: 0.44 },
+};
 
-  let vesselClass = null;
-  let confidence  = 0.40;
-  let source      = [];
-  let score       = 0;
+function predictRoute(vessel, vesselClass, existingProfile) {
+  const region = getRegion(vessel.lat, vessel.lng);
 
-  // Signal 1: Existing profile history
-  if (existingProfile?.vessel_class && existingProfile?.total_observations > 2) {
-    vesselClass = existingProfile.vessel_class;
-    confidence  = Math.min(0.95, (existingProfile.classification_confidence || 0.50) + 0.02);
-    source.push(`history (${existingProfile.total_observations} obs)`);
-    score += 50;
+  // Signal 1 — Heading projection (strongest when valid)
+  const headingPred = getHeadingPrediction(vessel.lat, vessel.lng, vessel.heading);
+  if (headingPred && headingPred.confidence >= 0.52) {
+    return { route: headingPred.route, confidence: headingPred.confidence, signal: 'heading_projection' };
   }
 
-  // Signal 2: Draught
-  if (draught !== null && draught > 0) {
-    let dc, dconf, ds;
-    if      (draught >= 18)  { dc = 'VLCC';          dconf = 0.95; ds = 50; }
-    else if (draught >= 14)  { dc = 'Suezmax';       dconf = 0.90; ds = 40; }
-    else if (draught >= 11)  { dc = 'Aframax';       dconf = 0.85; ds = 30; }
-    else if (draught >= 3.5) { dc = 'Tanker';        dconf = 0.70; ds = 20; }
-    else                     { dc = 'CoastalTanker'; dconf = 0.75; ds = 10; }
-    source.push(`draught ${draught}m → ${dc}`);
-    score += ds;
-    if (!vesselClass) { vesselClass = dc; confidence = dconf; }
-    else if (vesselClass === dc) { confidence = Math.min(0.97, confidence + 0.08); source.push('draught confirms'); }
-    else {
-      const ec = existingProfile?.classification_confidence || 0.50;
-      if (dconf > ec + 0.15) { vesselClass = dc; confidence = dconf * 0.85; source.push('draught overrides history'); }
-      else { confidence = Math.max(0.30, confidence - 0.05); source.push('history retained'); }
-    }
+  // Signal 2 — Existing profile typical routes
+  if (existingProfile && existingProfile.typical_routes && existingProfile.typical_routes.length > 0) {
+    const topRoute = existingProfile.typical_routes[0];
+    return { route: topRoute, confidence: 0.58, signal: 'vessel_history' };
   }
 
-  // Signal 3: Speed
-  if      (speed >= 12) { score += 30; source.push(`ocean speed ${speed.toFixed(1)}kts`); }
-  else if (speed >= 8)  { score += 20; source.push(`cruising ${speed.toFixed(1)}kts`); }
-  else if (speed >= 4)  { score += 10; source.push(`slow ${speed.toFixed(1)}kts`); }
-  else                  { score += 5;  source.push(`stationary ${speed.toFixed(1)}kts`); }
-
-  // Signal 4: Region
-  const region = detectRegion(lat, lng);
-  const majorLanes = ["Persian Gulf","Arabian Sea","Indian Ocean","Red Sea","Gulf of Aden","Strait of Malacca","South China Sea","Japan/Korea Waters","West Africa","European Atlantic","Cape of Good Hope","South America Atlantic","Gulf of Mexico"];
-  score += majorLanes.includes(region) ? 20 : 10;
-  source.push(`region: ${region}`);
-
-  // Fallback
-  if (!vesselClass) {
-    if      (score >= 70) { vesselClass = 'VLCC';          confidence = 0.45; }
-    else if (score >= 55) { vesselClass = 'Suezmax';       confidence = 0.42; }
-    else if (score >= 40) { vesselClass = 'Aframax';       confidence = 0.40; }
-    else if (score >= 25) { vesselClass = 'Tanker';        confidence = 0.38; }
-    else                  { vesselClass = 'CoastalTanker'; confidence = 0.35; }
-    source.push(`estimated score ${score}`);
+  // Signal 3 — Heading projection weaker signal
+  if (headingPred) {
+    return { route: headingPred.route, confidence: headingPred.confidence, signal: 'heading_weak' };
   }
 
-  return {
-    vesselClass,
-    confidence: Math.min(0.97, confidence),
-    source: source.join(' | '),
-    score,
-    totalObservations: (existingProfile?.total_observations || 0) + 1,
-  };
+  // Signal 4 — Region fallback
+  const regionDefault = REGION_ROUTES[region];
+  if (regionDefault) {
+    return { route: regionDefault.route, confidence: regionDefault.confidence, signal: 'region_fallback' };
+  }
+
+  return { route: 'Unknown Route', confidence: 0.20, signal: 'no_signal' };
 }
 
 // ══════════════════════════════════════════════════════════════════
-// LEARNING LOOP — SCORE PREDICTIONS AND SAVE OUTCOMES
-// Called every time a voyage completes
+// LEARNING LOOP — Score predictions, save outcomes, update profiles
 // ══════════════════════════════════════════════════════════════════
-function scorePrediction(predictedDest, predictedRoute, actualPort, actualRegion) {
-  if (!predictedDest || !actualPort) return { correct: null, confidence: 0.75 };
+function scorePrediction(predictedRoute, predictedDest, actualArrivalPort, actualRegion) {
+  if (!predictedRoute || !actualArrivalPort) return false;
 
-  const pred   = (predictedDest   || '').toLowerCase();
-  const port   = (actualPort      || '').toLowerCase();
-  const region = (actualRegion    || '').toLowerCase();
-  const route  = (predictedRoute  || '').toLowerCase();
+  const predicted = (predictedDest || predictedRoute).toLowerCase();
+  const actual = actualArrivalPort.toLowerCase();
+  const actualReg = (actualRegion || '').toLowerCase();
 
-  if (port.includes(pred) || pred.includes(port)) return { correct: true, confidence: 0.95 };
-
-  const regionMatches = {
-    'china':              ['ningbo','qingdao','dalian','shanghai','zhoushan','tianjin','china','south china'],
-    'japan/korea':        ['ulsan','yeosu','chiba','yokohama','busan','nagoya','japan','korea'],
-    'india':              ['mumbai','jamnagar','paradip','vadinar','sikka','india','arabian sea'],
-    'rotterdam':          ['rotterdam','antwerp','amsterdam','european atlantic'],
-    'rotterdam (cape)':   ['rotterdam','antwerp','amsterdam','european atlantic'],
-    'rotterdam (houthi)': ['rotterdam','antwerp','amsterdam','european atlantic'],
-    'us gulf coast':      ['houston','port arthur','corpus christi','louisiana','gulf of mexico'],
-    'new york':           ['new york','philadelphia','us east coast'],
-    'singapore':          ['singapore','strait of malacca'],
-    'korea/japan':        ['ulsan','yeosu','korea','japan','chiba','japan/korea'],
-    'europe':             ['rotterdam','antwerp','amsterdam','fos','trieste','mediterranean','european'],
-    'mumbai':             ['mumbai','jamnagar','india','arabian sea'],
+  const routeKeywords = {
+    'china': ['ningbo', 'qingdao', 'dalian', 'tianjin', 'zhoushan', 'china'],
+    'europe': ['rotterdam', 'antwerp', 'amsterdam', 'wilhelmshaven', 'lavera', 'trieste', 'augusta', 'europe'],
+    'india': ['vadinar', 'mundra', 'paradip', 'india'],
+    'south korea': ['ulsan', 'yeosu', 'korea'],
+    'japan': ['chiba', 'mizushima', 'yokkaichi', 'japan'],
+    'us gulf': ['houston', 'corpus christi', 'freeport', 'louisiana', 'us gulf'],
+    'singapore': ['singapore'],
+    'mediterranean': ['trieste', 'augusta', 'lavera', 'sidi kerir', 'mediterranean'],
+    'northwest europe': ['rotterdam', 'antwerp', 'amsterdam', 'wilhelmshaven'],
+    'asia': ['ningbo', 'qingdao', 'ulsan', 'chiba', 'singapore', 'china', 'korea', 'japan'],
   };
 
-  const matchList = regionMatches[pred] || [];
-  for (const kw of matchList) {
-    if (port.includes(kw) || region.includes(kw)) return { correct: true, confidence: 0.85 };
-  }
-
-  for (const [dest, keywords] of Object.entries(regionMatches)) {
-    if (route.includes(dest)) {
+  for (const [region, keywords] of Object.entries(routeKeywords)) {
+    if (predicted.includes(region) || predicted.includes(region.split(' ')[0])) {
       for (const kw of keywords) {
-        if (port.includes(kw) || region.includes(kw)) return { correct: true, confidence: 0.80 };
+        if (actual.includes(kw) || actualReg.includes(kw)) return true;
       }
     }
   }
-
-  return { correct: false, confidence: 0.75 };
+  return false;
 }
 
-function deriveActualRoute(voyage, allChokepoints, arrivalRegion) {
-  let actualRoute = voyage.predicted_route;
-  const r = (arrivalRegion || '').toLowerCase();
-  if (allChokepoints.includes('Suez Canal'))        actualRoute = 'Persian Gulf → Europe via Suez';
-  if (allChokepoints.includes('Strait of Malacca')) actualRoute = 'Persian Gulf → China via Malacca';
-  if (allChokepoints.includes('Bosphorus'))         actualRoute = 'Black Sea → Mediterranean via Bosphorus';
-  if (allChokepoints.includes('Oresund Strait'))    actualRoute = 'Russia Baltic → Europe via Oresund';
-  if (allChokepoints.includes('Panama Canal'))      actualRoute = 'USA Gulf → Asia via Panama';
-  if (allChokepoints.includes('Cape of Good Hope')) {
-    actualRoute = (r.includes('china') || r.includes('japan') || r.includes('korea') || r.includes('asia'))
-      ? 'West Africa → China via Cape'
-      : 'Middle East → Europe via Cape (Suez bypass)';
-  }
-  return actualRoute;
-}
+function deriveActualRoute(departureRegion, arrivalRegion, chokepointsPassed) {
+  const cp = chokepointsPassed || [];
+  const dep = (departureRegion || '').toLowerCase();
+  const arr = (arrivalRegion || '').toLowerCase();
 
-async function saveLearningOutcome(voyage, arrivalPort, arrivalRegion, voyageDays, allChokepoints, headers) {
-  const { correct, confidence } = scorePrediction(
-    voyage.predicted_destination, voyage.predicted_route, arrivalPort, arrivalRegion
-  );
-  const actualRoute = deriveActualRoute(voyage, allChokepoints, arrivalRegion);
-
-  const signalsCorrect = [];
-  const signalsWrong   = [];
-  if (correct) {
-    if (allChokepoints.length > 0) signalsCorrect.push(`chokepoints: ${allChokepoints.join(', ')}`);
-    if (voyage.departure_region)   signalsCorrect.push(`departure: ${voyage.departure_region}`);
-  } else {
-    if (voyage.predicted_route !== actualRoute) {
-      signalsWrong.push(`route wrong: predicted ${voyage.predicted_route}, actual ${actualRoute}`);
+  if (dep.includes('persian gulf') || dep.includes('arabian')) {
+    if (cp.includes('Suez Canal')) return 'Persian Gulf → Europe via Suez';
+    if (cp.includes('Strait of Malacca')) {
+      if (arr.includes('china')) return 'Persian Gulf → China via Malacca';
+      if (arr.includes('korea')) return 'Persian Gulf → South Korea';
+      if (arr.includes('japan')) return 'Persian Gulf → Japan';
+      return 'Persian Gulf → Asia via Malacca';
     }
+    if (cp.includes('Cape of Good Hope')) return 'Persian Gulf → Europe via Cape';
+    if (arr.includes('india')) return 'Persian Gulf → India';
   }
-
-  const outcome = {
-    voyage_id:            voyage.id,
-    mmsi:                 voyage.mmsi,
-    vessel_name:          voyage.vessel_name,
-    vessel_class:         voyage.vessel_class,
-    departure_port:       voyage.departure_port,
-    departure_region:     voyage.departure_region,
-    actual_arrival_port:  arrivalPort,
-    actual_arrival_region: arrivalRegion,
-    predicted_route:      voyage.predicted_route,
-    actual_route:         actualRoute,
-    prediction_correct:   correct,
-    prediction_confidence: voyage.confidence_at_departure,
-    arrival_confidence:   confidence,
-    trade_classification: 'NORMAL_TRADE',
-    voyage_days:          voyageDays,
-    chokepoints_passed:   allChokepoints,
-    signals_that_were_correct: signalsCorrect,
-    signals_that_were_wrong:   signalsWrong,
-  };
-
-  const oRes = await fetch(`${SUPABASE_URL}/rest/v1/learning_outcomes`, {
-    method: 'POST', headers, body: JSON.stringify(outcome),
-  });
-
-  if (oRes.ok) {
-    console.log(`  ✅ Learning outcome: ${voyage.vessel_name} | ${correct ? 'CORRECT ✓' : 'WRONG ✗'} | Actual: ${actualRoute}`);
-  } else {
-    console.error(`  Learning outcome error: ${await oRes.text()}`);
+  if (dep.includes('west africa')) {
+    if (cp.includes('Cape of Good Hope') || cp.includes('Strait of Malacca')) return 'West Africa → Asia via Cape';
+    return 'West Africa → Europe via Atlantic';
   }
+  if (dep.includes('black sea')) return 'Black Sea → Mediterranean';
+  if (dep.includes('baltic') || dep.includes('north sea')) return 'Russia Baltic → Europe';
+  return `${departureRegion || 'Unknown'} → ${arrivalRegion || 'Unknown'}`;
+}
 
-  return { correct, actualRoute };
+async function saveLearningOutcome(activeVoyage, arrivalPort, arrivalRegion, voyageDays, chokepointsPassed, headers) {
+  try {
+    const correct = scorePrediction(
+      activeVoyage.predicted_route,
+      activeVoyage.predicted_destination,
+      arrivalPort,
+      arrivalRegion
+    );
+
+    const actualRoute = deriveActualRoute(
+      activeVoyage.departure_region,
+      arrivalRegion,
+      chokepointsPassed
+    );
+
+    const outcome = {
+      voyage_id: activeVoyage.id,
+      mmsi: activeVoyage.mmsi,
+      vessel_name: activeVoyage.vessel_name,
+      vessel_class: activeVoyage.vessel_class,
+      departure_port: activeVoyage.departure_port,
+      departure_region: activeVoyage.departure_region,
+      actual_arrival_port: arrivalPort,
+      actual_arrival_region: arrivalRegion,
+      predicted_route: activeVoyage.predicted_route,
+      actual_route: actualRoute,
+      prediction_correct: correct,
+      prediction_confidence: activeVoyage.confidence_at_departure,
+      arrival_confidence: 0.75,
+      trade_classification: 'normal',
+      voyage_days: voyageDays,
+      chokepoints_passed: chokepointsPassed,
+      signals_that_were_correct: correct ? ['route_prediction'] : [],
+      signals_that_were_wrong: correct ? [] : ['route_prediction'],
+    };
+
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/learning_outcomes`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(outcome),
+    });
+
+    if (res.ok) {
+      console.log(`  ✅ Learning outcome: ${activeVoyage.vessel_name} | ${correct ? 'CORRECT ✓' : 'WRONG ✗'} | Actual: ${actualRoute}`);
+    }
+
+    return { correct, actualRoute };
+  } catch (err) {
+    console.error(`  ⚠️ Learning outcome error: ${err.message}`);
+    return { correct: false, actualRoute: 'Unknown' };
+  }
 }
 
 async function updateProfileWithConfirmedRoute(mmsi, confirmedRoute, headers) {
-  if (!mmsi || !confirmedRoute) return;
-  const pRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/vessel_profiles?mmsi=eq.${mmsi}&select=typical_routes,classification_confidence`,
-    { headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } }
-  );
-  const profiles = pRes.ok ? await pRes.json() : [];
-  if (profiles.length === 0) return;
-  const profile = profiles[0];
-  const existing = profile.typical_routes || [];
-  const updated  = [confirmedRoute, ...existing.filter(r => r !== confirmedRoute)].slice(0, 5);
-  const newConf  = Math.min(0.95, (profile.classification_confidence || 0.50) + 0.10);
-  await fetch(`${SUPABASE_URL}/rest/v1/vessel_profiles?mmsi=eq.${mmsi}`, {
-    method: 'PATCH', headers,
-    body: JSON.stringify({ typical_routes: updated, classification_confidence: newConf }),
-  });
-  console.log(`  ✅ Profile updated for ${mmsi}: confirmed route added`);
+  try {
+    // Get existing profile
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/vessel_profiles?mmsi=eq.${mmsi}&select=typical_routes,classification_confidence`, { headers });
+    if (!res.ok) return;
+    const profiles = await res.json();
+    if (!profiles.length) return;
+
+    const profile = profiles[0];
+    const existingRoutes = profile.typical_routes || [];
+
+    // Add confirmed route, keep top 5
+    const updatedRoutes = [confirmedRoute, ...existingRoutes.filter(r => r !== confirmedRoute)].slice(0, 5);
+    const newConfidence = Math.min((profile.classification_confidence || 0.5) + 0.10, 0.98);
+
+    await fetch(`${SUPABASE_URL}/rest/v1/vessel_profiles?mmsi=eq.${mmsi}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({
+        typical_routes: updatedRoutes,
+        classification_confidence: newConfidence,
+        updated_at: new Date().toISOString(),
+      }),
+    });
+  } catch (err) {
+    console.error(`  ⚠️ Profile update error: ${err.message}`);
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════
-// VOYAGE DETECTION
+// VOYAGE DETECTION — Start and end events
 // ══════════════════════════════════════════════════════════════════
-async function detectVoyageEvents(vessels, headers) {
-  console.log("\nDetecting voyage events...");
-
-  const profRes = await fetch(`${SUPABASE_URL}/rest/v1/vessel_profiles?select=*`, { headers });
-  const profiles = profRes.ok ? await profRes.json() : [];
-  const profileMap = {};
-  for (const p of profiles) profileMap[p.mmsi] = p;
-
-  const voyRes = await fetch(`${SUPABASE_URL}/rest/v1/voyages?status=eq.active&select=*`, { headers });
-  const activeVoyages = voyRes.ok ? await voyRes.json() : [];
-  const activeVoyageMap = {};
-  for (const v of activeVoyages) activeVoyageMap[v.mmsi] = v;
-
+async function detectVoyageEvents(vessel, vesselClass, existingProfile, activeVoyage, headers) {
+  const isStationary = vessel.speed < 2.0;
+  const isMoving = vessel.speed >= 6.0;
+  const nearPort = getNearestPort(vessel.lat, vessel.lng, 50);
+  const region = getRegion(vessel.lat, vessel.lng);
+  const chokepointsNow = getChokepointsPassed(vessel.lat, vessel.lng);
   const voyageUpdates = [];
-  const newVoyages    = [];
+  const newVoyages = [];
 
-  for (const vessel of vessels) {
-    const profile      = profileMap[vessel.mmsi];
-    const activeVoyage = activeVoyageMap[vessel.mmsi];
-    const region       = detectRegion(vessel.lat, vessel.lng);
-    const nearPort     = matchPort(vessel.lat, vessel.lng);
-    const { loadStatus, estimatedCargo } = calculateLoadStatus(vessel.draught, vessel.vessel_class);
-    const chokepointsNow = detectChokepoints(vessel.lat, vessel.lng);
+  // ── VOYAGE END: Moving, now stationary near a port ──
+  if (activeVoyage && isStationary && nearPort) {
+    console.log(`  🏁 VOYAGE END: ${vessel.name} arrived at ${nearPort.name}`);
 
-    const isStationary  = vessel.speed < 1.0;
-    const isMoving      = vessel.speed >= 1.0;
-    const wasStationary = profile ? (parseFloat(profile.last_speed || 0) < 1.0) : false;
+    const allChokepoints = [...new Set([
+      ...(activeVoyage.chokepoints_passed || []),
+      ...chokepointsNow,
+    ])];
 
-    // ── VOYAGE END: stationary near a port with active voyage ──
-    if (activeVoyage && isStationary && nearPort) {
-      console.log(`  VOYAGE END: ${vessel.name} arrived at ${nearPort.name}`);
+    const voyageDays = activeVoyage.departure_timestamp
+      ? (Date.now() - new Date(activeVoyage.departure_timestamp).getTime()) / 86400000
+      : null;
 
-      const allChokepoints = [...new Set([...(activeVoyage.chokepoints_passed || []), ...chokepointsNow])];
-      const voyageDays = activeVoyage.departure_timestamp
-        ? (Date.now() - new Date(activeVoyage.departure_timestamp).getTime()) / 86400000
-        : null;
+    // ── LEARNING LOOP ──
+    const { correct, actualRoute } = await saveLearningOutcome(
+      activeVoyage, nearPort.name, region, voyageDays, allChokepoints, headers
+    );
+    await updateProfileWithConfirmedRoute(vessel.mmsi, actualRoute, headers);
 
-      // ── LEARNING LOOP: Score and save ──
-      const { correct, actualRoute } = await saveLearningOutcome(
-        activeVoyage, nearPort.name, region, voyageDays, allChokepoints, headers
-      );
+    voyageUpdates.push({
+      id: activeVoyage.id,
+      status: 'completed',
+      arrival_timestamp: vessel.last_updated,
+      arrival_lat: vessel.lat,
+      arrival_lng: vessel.lng,
+      arrival_port: nearPort.name,
+      arrival_region: region,
+      arrival_draught: vessel.draught,
+      arrival_confirmed: true,
+      arrival_confidence: 0.75,
+      chokepoints_passed: allChokepoints,
+      actual_destination: nearPort.name,
+      total_voyage_days: voyageDays,
+      prediction_correct: correct,
+      prediction_scored: true,
+    });
+  }
 
-      // ── Update vessel profile with confirmed route ──
-      await updateProfileWithConfirmedRoute(vessel.mmsi, actualRoute, headers);
-
-      voyageUpdates.push({
-        id:                  activeVoyage.id,
-        status:              'completed',
-        arrival_timestamp:   vessel.last_updated,
-        arrival_lat:         vessel.lat,
-        arrival_lng:         vessel.lng,
-        arrival_port:        nearPort.name,
-        arrival_region:      region,
-        arrival_draught:     vessel.draught,
-        arrival_confirmed:   true,
-        arrival_confidence:  0.75,
-        chokepoints_passed:  allChokepoints,
-        actual_destination:  nearPort.name,
-        total_voyage_days:   voyageDays,
-        prediction_correct:  correct,
-        prediction_scored:   true,
-      });
+  // ── CHOKEPOINT UPDATE: Active voyage, update chokepoints ──
+  if (activeVoyage && !isStationary && chokepointsNow.length > 0) {
+    const existing = activeVoyage.chokepoints_passed || [];
+    const merged = [...new Set([...existing, ...chokepointsNow])];
+    if (merged.length > existing.length) {
+      console.log(`  ⚓ Chokepoint: ${vessel.name} passed ${chokepointsNow.join(', ')}`);
+      voyageUpdates.push({ id: activeVoyage.id, chokepoints_passed: merged });
     }
+  }
 
-    // ── VOYAGE START: was stationary, now moving, loaded ──
-    if (!activeVoyage && isMoving && wasStationary && loadStatus === 'loaded') {
-      const typicalRoutes = profile?.typical_routes || [];
-      const pred = predictRoute(vessel.lat, vessel.lng, vessel.heading, vessel.destination, region, loadStatus, vessel.vessel_class, typicalRoutes, []);
-      console.log(`  VOYAGE START: ${vessel.name} departing ${nearPort?.name || region}`);
-      newVoyages.push({
-        mmsi:                    vessel.mmsi,
-        vessel_name:             vessel.name,
-        vessel_class:            vessel.vessel_class,
-        departure_timestamp:     vessel.last_updated,
-        departure_lat:           vessel.lat,
-        departure_lng:           vessel.lng,
-        departure_port:          nearPort?.name || null,
-        departure_region:        region,
-        departure_draught:       vessel.draught,
-        departure_load_status:   loadStatus,
-        estimated_cargo_tonnes:  estimatedCargo,
-        declared_destination:    vessel.destination || null,
-        predicted_destination:   pred.predictedDest,
-        predicted_route:         pred.routeName,
-        confidence_at_departure: pred.confidence,
-        chokepoints_passed:      [],
-        status:                  'active',
-      });
-    }
+  // ── VOYAGE START: Was stationary, now moving, near or leaving a port ──
+  const wasStationary = existingProfile && (existingProfile.last_speed || 0) < 2.0;
+  const loadStatus = vessel.draught ? (vessel.draught >= 8 ? 'Loaded' : 'Ballast') : 'Unknown';
 
-    // ── UPDATE CHOKEPOINTS on active voyage ──
-    if (activeVoyage && chokepointsNow.length > 0) {
-      const existing = activeVoyage.chokepoints_passed || [];
-      const updated  = [...new Set([...existing, ...chokepointsNow])];
-      if (updated.length > existing.length) {
-        voyageUpdates.push({ id: activeVoyage.id, chokepoints_passed: updated });
-        console.log(`  Chokepoints updated for ${vessel.name}: ${updated.join(', ')}`);
-      }
-    }
+  if (!activeVoyage && isMoving && wasStationary && loadStatus === 'Loaded') {
+    const prediction = predictRoute(vessel, vesselClass, existingProfile);
+    console.log(`  🚢 VOYAGE START: ${vessel.name} departing | Pred: ${prediction.route}`);
+    newVoyages.push({
+      mmsi: vessel.mmsi,
+      vessel_name: vessel.name,
+      vessel_class: vesselClass,
+      departure_timestamp: vessel.last_updated,
+      departure_lat: vessel.lat,
+      departure_lng: vessel.lng,
+      departure_port: nearPort ? nearPort.name : null,
+      departure_region: region,
+      departure_draught: vessel.draught,
+      departure_load_status: loadStatus,
+      estimated_cargo_tonnes: estimateCargo(vessel, vesselClass).tonnes,
+      declared_destination: vessel.destination || null,
+      predicted_destination: prediction.route.split('→')[1]?.trim() || null,
+      predicted_route: prediction.route,
+      confidence_at_departure: prediction.confidence,
+      status: 'active',
+    });
   }
 
   return { voyageUpdates, newVoyages };
 }
 
 // ══════════════════════════════════════════════════════════════════
-// COLLECT VESSELS FROM AISSTREAM
+// VOYAGE SEEDING — Create voyage records for mid-ocean vessels
 // ══════════════════════════════════════════════════════════════════
-async function collectVessels() {
-  return new Promise((resolve) => {
-    const positions  = {};
-    const staticInfo = {};
-    let done = false;
+async function seedMidOceanVoyages(vessels, activeVoyageMmsis, existingProfileMap, headers) {
+  let seeded = 0;
+  const candidates = vessels.filter(v =>
+    v.speed >= 8 &&
+    !activeVoyageMmsis.has(v.mmsi) &&
+    ['Persian Gulf', 'Arabian Sea', 'Indian Ocean', 'South China Sea', 'West Africa',
+     'Atlantic', 'Cape of Good Hope', 'Red Sea', 'Open Ocean'].includes(getRegion(v.lat, v.lng))
+  );
 
-    const finish = () => {
-      if (done) return;
-      done = true;
-      try { ws.terminate(); } catch (_) {}
-      const result = Object.values(positions).map(v => ({
-        ...v,
-        name:        (staticInfo[v.mmsi]?.name        || v.name || "UNKNOWN").trim(),
-        destination: (staticInfo[v.mmsi]?.destination || "").trim(),
-        draught:      staticInfo[v.mmsi]?.draught || null,
-      }));
-      console.log(`Finishing collection — ${result.length} vessels collected`);
-      resolve(result.slice(0, TARGET));
-    };
+  for (const vessel of candidates.slice(0, 30)) {
+    const region = getRegion(vessel.lat, vessel.lng);
+    const existingProfile = existingProfileMap[vessel.mmsi];
+    const prediction = predictRoute(vessel, vessel.vessel_class || 'Tanker', existingProfile);
 
-    const timer = setTimeout(() => { console.log(`Timeout — ${Object.keys(positions).length} vessels`); finish(); }, COLLECT_MS);
-    const ws = new WebSocket("wss://stream.aisstream.io/v0/stream");
-    let phase = 1;
-    let staticTimer = null;
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/voyages`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          mmsi: vessel.mmsi,
+          vessel_name: vessel.name,
+          vessel_class: vessel.vessel_class || 'Tanker',
+          departure_timestamp: vessel.last_updated,
+          departure_lat: vessel.lat,
+          departure_lng: vessel.lng,
+          departure_port: null,
+          departure_region: region,
+          departure_draught: vessel.draught || null,
+          estimated_cargo_tonnes: vessel.draught ? estimateCargo(vessel, vessel.vessel_class || 'Tanker').tonnes : null,
+          declared_destination: vessel.destination || null,
+          predicted_destination: prediction.route.split('→')[1]?.trim() || null,
+          predicted_route: prediction.route,
+          confidence_at_departure: prediction.confidence,
+          status: 'active',
+        }),
+      });
+      if (res.ok) seeded++;
+    } catch (_) {}
+  }
+
+  if (seeded > 0) console.log(`🌱 Seeded ${seeded} new mid-ocean voyages`);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// MAIN COLLECTION FUNCTION
+// ══════════════════════════════════════════════════════════════════
+async function main() {
+  console.log('🛢️ UFS Vessel Collector v2.3 starting...');
+  console.log(`Target: ${TARGET} vessels | Bounding boxes: ${BOUNDING_BOXES.length} regions | Timeout: ${COLLECTION_TIMEOUT / 1000}s`);
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+    'apikey': SUPABASE_SERVICE_KEY,
+    'Prefer': 'return=minimal',
+  };
+
+  // ── Step 1: Fetch locked vessels (active voyages) ──
+  let lockedMmsis = new Set();
+  let activeVoyageMap = {};
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/voyages?status=eq.active&select=id,mmsi,vessel_name,vessel_class,departure_timestamp,departure_region,departure_port,predicted_route,predicted_destination,confidence_at_departure,chokepoints_passed`, { headers });
+    if (res.ok) {
+      const voyages = await res.json();
+      for (const v of voyages) {
+        lockedMmsis.add(v.mmsi);
+        activeVoyageMap[v.mmsi] = v;
+      }
+      console.log(`🔒 ${lockedMmsis.size} locked vessels (active voyages)`);
+    }
+  } catch (err) {
+    console.error('Failed to fetch active voyages:', err.message);
+  }
+
+  // ── Step 2: Fetch existing profiles ──
+  let existingProfileMap = {};
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/vessel_profiles?select=mmsi,vessel_class,classification_confidence,classification_source,total_observations,typical_routes,last_speed,last_draught,last_load_status`, { headers });
+    if (res.ok) {
+      const profiles = await res.json();
+      for (const p of profiles) existingProfileMap[p.mmsi] = p;
+      console.log(`📚 ${profiles.length} existing profiles loaded`);
+    }
+  } catch (err) {
+    console.error('Failed to fetch profiles:', err.message);
+  }
+
+  // ── Step 3: Phase 1 — Collect vessel positions from AISstream ──
+  console.log('\n📡 Phase 1: Collecting vessel positions...');
+  const positions = {};
+  let totalMessages = 0;
+
+  await new Promise((resolve) => {
+    const ws = new WebSocket('wss://stream.aisstream.io/v0/stream');
+    const timer = setTimeout(() => { ws.close(); resolve(); }, COLLECTION_TIMEOUT);
 
     ws.on('open', () => {
-      console.log("✅ Connected to AISstream");
       ws.send(JSON.stringify({
         APIKey: AISSTREAM_KEY,
-        BoundingBoxes: [[[-90, -180], [90, 180]]],
-        FilterMessageTypes: ["PositionReport", "ShipStaticData"],
-        ShipTypes: [80,81,82,83,84,85,86,87,88,89],
+        BoundingBoxes: BOUNDING_BOXES,
+        FilterMessageTypes: ['PositionReport'],
+        FiltersShipType: [80, 81, 82, 83, 84, 85, 86, 87, 88, 89],
+      }));
+      console.log('✅ Connected to AISstream WebSocket');
+    });
+
+    ws.on('message', (data) => {
+      try {
+        totalMessages++;
+        const msg = JSON.parse(data);
+        if (msg.MessageType !== 'PositionReport') return;
+
+        const pos = msg.Message?.PositionReport;
+        const meta = msg.MetaData;
+        if (!pos || !meta) return;
+
+        const mmsi = String(pos.UserID || meta.MMSI_String);
+        if (!mmsi || mmsi === '0') return;
+
+        const lat = meta.latitude ?? pos.Latitude;
+        const lng = meta.longitude ?? pos.Longitude;
+        if (!lat || !lng || lat === 0 || lng === 0) return;
+
+        const heading = pos.TrueHeading >= 0 && pos.TrueHeading <= 360 ? pos.TrueHeading : null;
+        const speed = pos.Sog || 0;
+
+        if (!positions[mmsi]) {
+          positions[mmsi] = {
+            mmsi,
+            name: meta.ShipName?.trim() || `Tanker-${mmsi.slice(-4)}`,
+            lat,
+            lng,
+            heading,
+            speed,
+            nav_status: pos.NavigationalStatus,
+            last_updated: new Date().toISOString(),
+            destination: null,
+            draught: null,
+          };
+        }
+
+        if (Object.keys(positions).length >= RAW_TARGET && lockedMmsis.size === 0) {
+          clearTimeout(timer);
+          ws.close();
+          resolve();
+        }
+      } catch (_) {}
+    });
+
+    ws.on('error', (err) => { console.error('WebSocket error:', err.message); });
+    ws.on('close', () => { clearTimeout(timer); resolve(); });
+  });
+
+  console.log(`  Collected ${Object.keys(positions).length} raw positions from ${totalMessages} messages`);
+
+  // ── Step 4: Phase 2 — Collect static data (draught, destination) ──
+  console.log('\n📡 Phase 2: Collecting draught and destination...');
+  const collectedMmsis = Object.keys(positions);
+
+  await new Promise((resolve) => {
+    const ws = new WebSocket('wss://stream.aisstream.io/v0/stream');
+    const timer = setTimeout(() => { ws.close(); resolve(); }, STATIC_TIMEOUT);
+    let staticCount = 0;
+
+    ws.on('open', () => {
+      ws.send(JSON.stringify({
+        APIKey: AISSTREAM_KEY,
+        BoundingBoxes: BOUNDING_BOXES,
+        FilterMessageTypes: ['ShipStaticData'],
       }));
     });
 
     ws.on('message', (data) => {
       try {
-        const msg  = JSON.parse(data.toString());
-        const meta = msg.MetaData || {};
-        const mmsi = String(meta.MMSI || "");
-        if (!mmsi || mmsi === "0") return;
+        const msg = JSON.parse(data);
+        if (msg.MessageType !== 'ShipStaticData') return;
+        const mmsi = String(msg.MetaData?.MMSI_String || msg.Message?.ShipStaticData?.UserID);
+        if (!positions[mmsi]) return;
 
-        if (msg.MessageType === "PositionReport") {
-          if (phase === 2) return;
-          const pos = msg.Message?.PositionReport || {};
-          const lat = parseFloat(String(meta.latitude ?? pos.Latitude ?? "0"));
-          const lng = parseFloat(String(meta.longitude ?? pos.Longitude ?? "0"));
-          if (!lat || !lng || (lat === 0 && lng === 0)) return;
-          if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return;
-
-          positions[mmsi] = {
-            mmsi, lat, lng,
-            name:         (meta.ShipName || "").trim(),
-            heading:      (() => { const th = Number(pos.TrueHeading ?? 511); const cog = Number(pos.Cog ?? 511); if (th >= 0 && th <= 360) return th; if (cog >= 0 && cog <= 360) return cog; return null; })(),
-            speed:        Number(pos.Sog ?? 0),
-            destination:  "",
-            draught:      null,
-            vessel_class: "Tanker",
-            last_updated: new Date().toISOString(),
-          };
-
-          const count = Object.keys(positions).length;
-          if (count % 50 === 0) console.log(`  Collected ${count} raw vessels...`);
-          if (count >= RAW_TARGET && phase === 1) {
-            phase = 2;
-            clearTimeout(timer);
-            console.log(`  Phase 1 complete — staying 20s for static data...`);
-            staticTimer = setTimeout(finish, 20000);
-          }
+        const staticData = msg.Message?.ShipStaticData;
+        if (staticData?.Draught && staticData.Draught > 0.5) {
+          positions[mmsi].draught = staticData.Draught;
+          staticCount++;
         }
-
-        if (msg.MessageType === "ShipStaticData") {
-          if (phase === 2 && !positions[mmsi]) return;
-          const sd = msg.Message?.ShipStaticData || {};
-          const draught = sd.MaximumStaticDraught ? parseFloat(sd.MaximumStaticDraught) : null;
-          staticInfo[mmsi] = { name: (sd.Name || meta.ShipName || "").trim(), destination: (sd.Destination || "").trim(), draught, shipType: Number(sd.Type ?? 80) };
-          if (phase === 2 && draught && positions[mmsi]) console.log(`  Static: ${staticInfo[mmsi].name} | draught: ${draught}m`);
-          if (phase === 2) {
-            const withDraught = Object.keys(positions).filter(m => staticInfo[m]?.draught).length;
-            if (withDraught >= TARGET * 0.7) { console.log(`  Got draught for ${withDraught} vessels — finishing early`); clearTimeout(staticTimer); finish(); }
-          }
+        if (staticData?.Destination) {
+          positions[mmsi].destination = staticData.Destination.trim();
+        }
+        if (staticData?.ShipName && positions[mmsi].name.startsWith('Tanker-')) {
+          positions[mmsi].name = staticData.ShipName.trim();
         }
       } catch (_) {}
     });
 
-    ws.on('error', (err) => { console.error("WebSocket error:", err.message); clearTimeout(timer); finish(); });
-    ws.on('close', () => { clearTimeout(timer); finish(); });
-  });
-}
-
-// ══════════════════════════════════════════════════════════════════
-// SAVE TO SUPABASE
-// ══════════════════════════════════════════════════════════════════
-async function saveToSupabase(vessels) {
-  const headers = {
-    "apikey": SUPABASE_SERVICE_KEY,
-    "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
-    "Content-Type": "application/json",
-    "Prefer": "return=minimal",
-  };
-
-  const { voyageUpdates, newVoyages } = await detectVoyageEvents(vessels, headers);
-
-  const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/vessel_profiles?select=*`, {
-    headers: { "apikey": SUPABASE_SERVICE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}` }
-  });
-  const existingProfiles = existingRes.ok ? await existingRes.json() : [];
-  const existingProfileMap = {};
-  for (const p of existingProfiles) existingProfileMap[p.mmsi] = p;
-  console.log(`Loaded ${existingProfiles.length} existing profiles`);
-
-  console.log("\nClearing old vessel data...");
-  await fetch(`${SUPABASE_URL}/rest/v1/vessels?id=gte.0`,     { method: "DELETE", headers });
-  await fetch(`${SUPABASE_URL}/rest/v1/predictions?id=gte.0`, { method: "DELETE", headers });
-
-  const vesselRows = vessels.map(v => {
-    const { loadStatus, estimatedCargo } = calculateLoadStatus(v.draught, v.vessel_class);
-    const cls = classifyVessel(v, existingProfileMap[v.mmsi]);
-    return {
-      mmsi: v.mmsi, name: v.name, lat: v.lat, lng: v.lng,
-      heading: v.heading, speed: v.speed, destination: v.destination,
-      vessel_class: cls.vesselClass, draught: v.draught,
-      load_status: loadStatus, estimated_cargo_tonnes: estimatedCargo,
-      last_updated: v.last_updated,
-      last_seen_at:    v._notSeenThisRun ? v.last_seen_at : v.last_updated,
-      times_not_seen:  v._notSeenThisRun ? (v.times_not_seen || 1) : 0,
-    };
+    ws.on('error', () => {});
+    ws.on('close', () => { clearTimeout(timer); resolve(); });
   });
 
-  const vRes = await fetch(`${SUPABASE_URL}/rest/v1/vessels`, { method: "POST", headers, body: JSON.stringify(vesselRows) });
-  console.log(`Vessels insert: HTTP ${vRes.status}`);
-
-  const historyRows = vessels.map(v => {
-    const { loadStatus } = calculateLoadStatus(v.draught, v.vessel_class);
-    return { mmsi: v.mmsi, lat: v.lat, lng: v.lng, heading: v.heading, speed: v.speed, draught: v.draught, load_status: loadStatus, recorded_at: v.last_updated };
-  });
-
-  const hRes = await fetch(`${SUPABASE_URL}/rest/v1/vessel_history`, { method: "POST", headers, body: JSON.stringify(historyRows) });
-  console.log(`History insert: HTTP ${hRes.status}`);
-
-  const predRows = vessels.map(v => {
-    const region = detectRegion(v.lat, v.lng);
-    const { loadStatus } = calculateLoadStatus(v.draught, v.vessel_class);
-    const pred = predictRoute(v.lat, v.lng, v.heading, v.destination, region, loadStatus, v.vessel_class, [], []);
-    return { mmsi: v.mmsi, predicted_destination: pred.predictedDest, route_name: pred.routeName, confidence: pred.confidence, predicted_eta: new Date(Date.now() + pred.etaDays * 86400000).toISOString(), created_at: v.last_updated };
-  });
-
-  const pRes = await fetch(`${SUPABASE_URL}/rest/v1/predictions`, { method: "POST", headers, body: JSON.stringify(predRows) });
-  console.log(`Predictions insert: HTTP ${pRes.status}`);
-
-  const profileRows = vessels.map(v => {
-    const region = detectRegion(v.lat, v.lng);
-    const { loadStatus } = calculateLoadStatus(v.draught, v.vessel_class);
-    const pred = predictRoute(v.lat, v.lng, v.heading, v.destination, region, loadStatus, v.vessel_class, [], []);
-    const cls  = classifyVessel(v, existingProfileMap[v.mmsi]);
-    return {
-      mmsi: v.mmsi, name: v.name,
-      vessel_class: cls.vesselClass, classification_confidence: cls.confidence,
-      classification_source: cls.source, total_observations: cls.totalObservations,
-      last_seen_region: region, last_speed: v.speed, last_heading: v.heading,
-      last_draught: v.draught, last_load_status: loadStatus,
-      typical_routes: [pred.routeName], can_use_suez: cls.vesselClass !== 'VLCC',
-      updated_at: v.last_updated,
-    };
-  });
-
-  const prRes = await fetch(`${SUPABASE_URL}/rest/v1/vessel_profiles`, {
-    method: "POST", headers: { ...headers, "Prefer": "resolution=merge-duplicates" }, body: JSON.stringify(profileRows),
-  });
-  console.log(`Profiles upsert: HTTP ${prRes.status}`);
-  if (!prRes.ok) console.error(`Profiles error: ${await prRes.text()}`);
-
-  if (newVoyages.length > 0) {
-    const nvRes = await fetch(`${SUPABASE_URL}/rest/v1/voyages`, { method: "POST", headers, body: JSON.stringify(newVoyages) });
-    console.log(`New voyages: ${newVoyages.length} | HTTP ${nvRes.status}`);
-  }
-
-  for (const update of voyageUpdates) {
-    const { id, ...updateData } = update;
-    const uvRes = await fetch(`${SUPABASE_URL}/rest/v1/voyages?id=eq.${id}`, { method: "PATCH", headers, body: JSON.stringify(updateData) });
-    console.log(`Voyage ${id} updated: HTTP ${uvRes.status}`);
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════
-// FETCH LOCKED VESSELS
-// ══════════════════════════════════════════════════════════════════
-async function fetchLockedVessels() {
-  const headers = { "apikey": SUPABASE_SERVICE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}` };
-  const vRes = await fetch(`${SUPABASE_URL}/rest/v1/voyages?status=eq.active&select=mmsi`, { headers });
-  const activeVoyages = vRes.ok ? await vRes.json() : [];
-  const lockedMMSIs = [...new Set(activeVoyages.map(v => v.mmsi))];
-  if (lockedMMSIs.length === 0) return { lockedMMSIs: [], lockedVessels: [] };
-  const mmsiFilter = lockedMMSIs.map(m => `mmsi.eq.${m}`).join(',');
-  const posRes = await fetch(`${SUPABASE_URL}/rest/v1/vessels?or=(${mmsiFilter})&select=*`, { headers });
-  const lockedVessels = posRes.ok ? await posRes.json() : [];
-  console.log(`  Locked vessels (active voyages): ${lockedMMSIs.length}`);
-  return { lockedMMSIs, lockedVessels };
-}
-
-// ══════════════════════════════════════════════════════════════════
-// SEED ACTIVE VOYAGES
-// ══════════════════════════════════════════════════════════════════
-async function seedActiveVoyages(vessels, headers) {
-  const vRes = await fetch(`${SUPABASE_URL}/rest/v1/voyages?status=eq.active&select=mmsi`, { headers });
-  const existing = vRes.ok ? await vRes.json() : [];
-  const existingMMSIs = new Set(existing.map(v => v.mmsi));
-
-  const midOceanVessels = vessels.filter(v => {
-    if (existingMMSIs.has(v.mmsi)) return false;
-    if (v.speed < 8) return false;
-    if (matchPort(v.lat, v.lng)) return false;
-    const region = detectRegion(v.lat, v.lng);
-    return ["Persian Gulf","Arabian Sea","Indian Ocean","Red Sea","Gulf of Aden","Strait of Malacca","South China Sea","Japan/Korea Waters","West Africa","European Atlantic","Cape of Good Hope","South America Atlantic","Gulf of Mexico","Open Ocean"].includes(region);
-  });
-
-  if (midOceanVessels.length === 0) { console.log('  No new mid-ocean vessels to seed'); return; }
-
-  const voyageRows = midOceanVessels.map(v => {
-    const region = detectRegion(v.lat, v.lng);
-    const { loadStatus, estimatedCargo } = calculateLoadStatus(v.draught, v.vessel_class);
-    const pred = predictRoute(v.lat, v.lng, v.heading, v.destination, region, loadStatus, v.vessel_class, [], []);
-    return {
-      mmsi: v.mmsi, vessel_name: v.name, vessel_class: v.vessel_class,
-      departure_timestamp: v.last_updated, departure_lat: v.lat, departure_lng: v.lng,
-      departure_port: null, departure_region: region, departure_draught: v.draught,
-      departure_load_status: loadStatus, estimated_cargo_tonnes: estimatedCargo,
-      declared_destination: v.destination || null, predicted_destination: pred.predictedDest,
-      predicted_route: pred.routeName, confidence_at_departure: pred.confidence,
-      chokepoints_passed: [], status: 'active',
-    };
-  });
-
-  const seedRes = await fetch(`${SUPABASE_URL}/rest/v1/voyages`, { method: "POST", headers, body: JSON.stringify(voyageRows) });
-  console.log(`  Seeded ${voyageRows.length} active voyages: HTTP ${seedRes.status}`);
-}
-
-// ══════════════════════════════════════════════════════════════════
-// MAIN
-// ══════════════════════════════════════════════════════════════════
-(async () => {
-  console.log("🛢️  UFS Vessel Collector v2.2 starting...");
-  console.log(`Target: ${TARGET} | Raw: ${RAW_TARGET} | Timeout: ${COLLECT_MS/1000}s`);
-  console.log(`Time: ${new Date().toUTCString()}\n`);
-
-  console.log("Fetching locked vessels (active voyages)...");
-  const { lockedMMSIs, lockedVessels } = await fetchLockedVessels();
-
-  const newVessels = await collectVessels();
-
-  if (newVessels.length === 0 && lockedVessels.length === 0) {
-    console.error("❌ No vessels collected. Check AISstream API key.");
-    process.exit(1);
-  }
-
-  const newMMSIs = new Set(newVessels.map(v => v.mmsi));
-  const mergedVessels = [...newVessels];
-  let notSeenCount = 0;
-
-  for (const locked of lockedVessels) {
-    if (!newMMSIs.has(locked.mmsi)) {
-      mergedVessels.push({ ...locked, times_not_seen: (locked.times_not_seen || 0) + 1, _notSeenThisRun: true });
-      notSeenCount++;
+  // ── Step 5: Ensure locked vessels are included ──
+  for (const mmsi of lockedMmsis) {
+    if (!positions[mmsi]) {
+      const profile = existingProfileMap[mmsi];
+      if (profile) {
+        positions[mmsi] = {
+          mmsi,
+          name: activeVoyageMap[mmsi]?.vessel_name || `Vessel-${mmsi.slice(-4)}`,
+          lat: profile.last_lat || 0,
+          lng: profile.last_lng || 0,
+          heading: null,
+          speed: 0,
+          last_updated: new Date().toISOString(),
+          destination: null,
+          draught: profile.last_draught || null,
+          _notSeenThisRun: true,
+        };
+      }
     }
   }
 
-  const finalVessels = mergedVessels.slice(0, TARGET);
+  // ── Step 6: Classify all vessels ──
+  const allVessels = Object.values(positions);
+  for (const vessel of allVessels) {
+    const profile = existingProfileMap[vessel.mmsi];
+    const { vesselClass, confidence, source } = classifyVessel(vessel, profile);
+    vessel.vessel_class = vesselClass;
+    vessel.classification_confidence = confidence;
+    vessel.classification_source = source;
+    const cargo = estimateCargo(vessel, vesselClass);
+    vessel.estimated_cargo_tonnes = cargo.tonnes;
+    vessel.load_status = cargo.loadStatus;
+  }
 
-  console.log(`\n✅ Final vessel count: ${finalVessels.length}`);
-  console.log(`  New from AISstream: ${newVessels.length}`);
-  console.log(`  Locked (carried over): ${notSeenCount}`);
+  // ── Step 7: Sort by classification confidence, take top TARGET ──
+  // Always keep locked vessels, fill rest by confidence
+  const lockedVessels = allVessels.filter(v => lockedMmsis.has(v.mmsi));
+  const unlockedVessels = allVessels
+    .filter(v => !lockedMmsis.has(v.mmsi))
+    .sort((a, b) => b.classification_confidence - a.classification_confidence);
 
-  const classCounts = { VLCC: 0, Suezmax: 0, Aframax: 0, Tanker: 0, CoastalTanker: 0 };
-  for (const v of finalVessels) { const cls = classifyVessel(v, {}); classCounts[cls.vesselClass] = (classCounts[cls.vesselClass] || 0) + 1; }
-  console.log(`  Classification: VLCC=${classCounts.VLCC} | Suezmax=${classCounts.Suezmax} | Aframax=${classCounts.Aframax} | Tanker=${classCounts.Tanker} | Coastal=${classCounts.CoastalTanker}`);
+  const finalVessels = [...lockedVessels, ...unlockedVessels].slice(0, TARGET);
+  console.log(`\n✅ Final fleet: ${finalVessels.length} vessels (${lockedVessels.length} locked + ${finalVessels.length - lockedVessels.length} new)`);
 
-  console.log("\nSaving to Supabase...");
-  await saveToSupabase(finalVessels);
+  // Classification summary
+  const classCounts = {};
+  for (const v of finalVessels) {
+    classCounts[v.vessel_class] = (classCounts[v.vessel_class] || 0) + 1;
+  }
+  console.log('📊 Classification:', Object.entries(classCounts).map(([k, v]) => `${k}: ${v}`).join(' | '));
 
-  const headers = { "apikey": SUPABASE_SERVICE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`, "Content-Type": "application/json", "Prefer": "return=minimal" };
-  console.log("\nSeeding active voyages for mid-ocean vessels...");
-  await seedActiveVoyages(finalVessels, headers);
+  // ── Step 8: Voyage event detection ──
+  console.log('\n🔍 Detecting voyage events...');
+  const allVoyageUpdates = [];
+  const allNewVoyages = [];
 
-  console.log("\n🎉 Done.");
-})();
+  for (const vessel of finalVessels) {
+    if (vessel._notSeenThisRun) continue;
+    const activeVoyage = activeVoyageMap[vessel.mmsi] || null;
+    const existingProfile = existingProfileMap[vessel.mmsi] || null;
+    const { vesselClass } = classifyVessel(vessel, existingProfile);
+    const { voyageUpdates, newVoyages } = await detectVoyageEvents(
+      vessel, vesselClass, existingProfile, activeVoyage, headers
+    );
+    allVoyageUpdates.push(...voyageUpdates);
+    allNewVoyages.push(...newVoyages);
+  }
+
+  // ── Step 9: Save to Supabase ──
+  console.log('\n💾 Saving to Supabase...');
+
+  // Clear and insert vessels
+  const deleteRes = await fetch(`${SUPABASE_URL}/rest/v1/vessels?id=gt.0`, { method: 'DELETE', headers });
+  console.log(`  Delete vessels: HTTP ${deleteRes.status}`);
+
+  const vesselRows = finalVessels.map(v => ({
+    mmsi: v.mmsi,
+    name: v.name,
+    lat: v.lat,
+    lng: v.lng,
+    heading: v.heading,
+    speed: v.speed,
+    vessel_class: v.vessel_class,
+    destination: v.destination,
+    draught: v.draught,
+    load_status: v.load_status,
+    estimated_cargo_tonnes: v.estimated_cargo_tonnes,
+    last_updated: v.last_updated,
+    last_seen_at: v._notSeenThisRun ? null : v.last_updated,
+    times_not_seen: v._notSeenThisRun ? 1 : 0,
+  }));
+
+  const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/vessels`, {
+    method: 'POST',
+    headers: { ...headers, 'Prefer': 'return=minimal' },
+    body: JSON.stringify(vesselRows),
+  });
+  console.log(`  Insert vessels: HTTP ${insertRes.status}`);
+
+  // Insert vessel history
+  const historyRows = finalVessels
+    .filter(v => !v._notSeenThisRun)
+    .map(v => ({
+      mmsi: v.mmsi,
+      name: v.name,
+      lat: v.lat,
+      lng: v.lng,
+      heading: v.heading,
+      speed: v.speed,
+      vessel_class: v.vessel_class,
+      draught: v.draught,
+      load_status: v.load_status,
+      recorded_at: v.last_updated,
+    }));
+
+  const histRes = await fetch(`${SUPABASE_URL}/rest/v1/vessel_history`, {
+    method: 'POST',
+    headers: { ...headers, 'Prefer': 'return=minimal' },
+    body: JSON.stringify(historyRows),
+  });
+  console.log(`  Insert history: HTTP ${histRes.status}`);
+
+  // Insert predictions
+  const predRows = finalVessels.map(v => {
+    const profile = existingProfileMap[v.mmsi];
+    const pred = predictRoute(v, v.vessel_class, profile);
+    return {
+      mmsi: v.mmsi,
+      vessel_name: v.name,
+      predicted_route: pred.route,
+      predicted_destination: pred.route.split('→')[1]?.trim() || null,
+      confidence: pred.confidence,
+      signal_used: pred.signal,
+      recorded_at: v.last_updated,
+    };
+  });
+
+  const predRes = await fetch(`${SUPABASE_URL}/rest/v1/predictions`, {
+    method: 'POST',
+    headers: { ...headers, 'Prefer': 'return=minimal' },
+    body: JSON.stringify(predRows),
+  });
+  console.log(`  Insert predictions: HTTP ${predRes.status}`);
+
+  // Upsert vessel profiles
+  const profileRows = finalVessels.map(v => {
+    const existing = existingProfileMap[v.mmsi];
+    const obs = (existing?.total_observations || 0) + 1;
+    return {
+      mmsi: v.mmsi,
+      vessel_name: v.name,
+      vessel_class: v.vessel_class,
+      classification_confidence: v.classification_confidence,
+      classification_source: v.classification_source,
+      total_observations: obs,
+      last_speed: v.speed,
+      last_heading: v.heading,
+      last_draught: v.draught,
+      last_load_status: v.load_status,
+      typical_routes: existing?.typical_routes || [],
+      updated_at: new Date().toISOString(),
+    };
+  });
+
+  const profRes = await fetch(`${SUPABASE_URL}/rest/v1/vessel_profiles`, {
+    method: 'POST',
+    headers: { ...headers, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify(profileRows),
+  });
+  console.log(`  Upsert profiles: HTTP ${profRes.status}`);
+
+  // Apply voyage updates
+  for (const update of allVoyageUpdates) {
+    const { id, ...fields } = update;
+    await fetch(`${SUPABASE_URL}/rest/v1/voyages?id=eq.${id}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(fields),
+    });
+  }
+  if (allVoyageUpdates.length > 0) console.log(`  Updated ${allVoyageUpdates.length} voyage records`);
+
+  // Insert new voyages
+  if (allNewVoyages.length > 0) {
+    const newVoyRes = await fetch(`${SUPABASE_URL}/rest/v1/voyages`, {
+      method: 'POST',
+      headers: { ...headers, 'Prefer': 'return=minimal' },
+      body: JSON.stringify(allNewVoyages),
+    });
+    console.log(`  New voyages: HTTP ${newVoyRes.status} (${allNewVoyages.length} created)`);
+  }
+
+  // ── Step 10: Seed mid-ocean voyages ──
+  const activeVoyageMmsis = new Set([...Object.keys(activeVoyageMap), ...allNewVoyages.map(v => v.mmsi)]);
+  await seedMidOceanVoyages(finalVessels, activeVoyageMmsis, existingProfileMap, headers);
+
+  console.log('\n✅ UFS Vessel Collector v2.3 complete');
+  console.log(`   ${finalVessels.length} vessels | ${allVoyageUpdates.length} voyage updates | ${allNewVoyages.length} new voyages`);
+}
+
+main().catch(err => {
+  console.error('Fatal error:', err);
+  process.exit(1);
+});
