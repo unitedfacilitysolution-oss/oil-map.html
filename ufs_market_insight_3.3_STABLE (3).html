@@ -1060,6 +1060,9 @@
       <span class="ctrl-dot" style="background:#00e5ff"></span> Live Tankers
     </button>
     <div class="ctrl-divider"></div>
+    <button class="ctrl-btn on" id="btn-rivers" style="--c:#29b6f6" onclick="toggleLayer('rivers',this)">
+      🌊 River Systems
+    </button>
     <button class="reset-btn" onclick="resetView()">Reset View</button>
     <button class="fs-open-btn" onclick="openFullscreen()">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h7v2H5v5H3V3zm11 0h7v7h-2V5h-5V3zM3 14h2v5h5v2H3v-7zm16 5h-5v2h7v-7h-2v5z"/></svg>
@@ -1262,6 +1265,9 @@
     <button class="ctrl-btn on" id="fs-exploration" style="--c:#00e676" onclick="toggleLayer('exploration',this);syncFsBtn('exploration',this)">
       <span class="ctrl-dot" style="background:#00e676"></span> Exploration
     </button>
+    <button class="ctrl-btn on" id="fs-rivers" style="--c:#29b6f6" onclick="toggleLayer('rivers',this);syncFsBtn('rivers',this)">
+      <span class="ctrl-dot" style="background:#29b6f6"></span> Rivers
+    </button>
 
     <div class="fs-divider"></div>
 
@@ -1387,7 +1393,8 @@
     smallfields: L.layerGroup(),
     chokepoints: L.layerGroup(),
     lng: L.layerGroup(),
-    exploration: L.layerGroup()
+    exploration: L.layerGroup(),
+    rivers: L.layerGroup()
   };
 
   // ══════════════════════════════════════════
@@ -8540,7 +8547,8 @@ var smallFields = [
     smallfields:false,
     chokepoints:true,
     lng: !isMobileDevice,
-    exploration:true
+    exploration:true,
+    rivers:true
   };
   // Sync button states with mobile defaults
   if(isMobileDevice){
@@ -8803,6 +8811,328 @@ var smallFields = [
       .bindPopup(popupHtml,{className:"oil-popup",maxWidth:320})
       .addTo(layers.lng);
   });
+
+  // ══════════════════════════════════════════════════════════════════
+  // RIVER SYSTEMS LAYER
+  // Global cargo river networks — precise waypoints following actual
+  // river paths, with inland port markers
+  // ══════════════════════════════════════════════════════════════════
+
+  var RIVER_SYSTEMS = [
+
+    // ── RHINE (Europe) ──────────────────────────────────────────────
+    {
+      name: 'Rhine',
+      region: 'Europe',
+      color: '#29b6f6',
+      description: 'Europe\'s busiest inland waterway. Rotterdam to Basel — 800km. Connects North Sea to heart of Europe via Germany and Switzerland.',
+      annualCargo: '300M+ tonnes/year',
+      waypoints: [
+        [51.978, 4.117],[51.960, 4.200],[51.920, 4.480],[51.890, 4.550],
+        [51.850, 4.650],[51.807, 4.669],[51.780, 4.700],[51.694, 4.617],
+        [51.836, 4.977],[51.860, 5.400],[51.845, 5.868],[51.843, 6.244],
+        [51.800, 6.400],[51.760, 6.500],[51.657, 6.620],[51.530, 6.700],
+        [51.430, 6.762],[51.340, 6.770],[51.225, 6.774],[51.140, 6.800],
+        [50.934, 6.960],[50.733, 7.099],[50.590, 7.220],[50.506, 7.298],
+        [50.360, 7.598],[50.190, 7.750],[49.967, 7.899],[49.998, 8.272],
+        [49.870, 8.330],[49.632, 8.360],[49.487, 8.433],[49.318, 8.436],
+        [49.221, 8.365],[49.019, 8.330],[48.800, 8.100],[48.574, 7.748],
+        [48.350, 7.680],[48.200, 7.620],[48.025, 7.578],[47.820, 7.580],
+        [47.700, 7.570],[47.620, 7.570],[47.567, 7.590]
+      ],
+      ports: [
+        { name: 'Rotterdam', lat: 51.920, lng: 4.480, type: 'Major Seaport', volume: '470M tonnes/year', cargo: 'Crude oil, petroleum products, containers, bulk' },
+        { name: 'Dordrecht', lat: 51.807, lng: 4.669, type: 'Inland Port', volume: '18M tonnes/year', cargo: 'Petroleum products, chemicals, containers' },
+        { name: 'Nijmegen', lat: 51.845, lng: 5.868, type: 'Inland Port', volume: '5M tonnes/year', cargo: 'Bulk goods, containers' },
+        { name: 'Emmerich', lat: 51.843, lng: 6.244, type: 'Border Port', volume: '8M tonnes/year', cargo: 'Transit goods, bulk' },
+        { name: 'Duisburg', lat: 51.430, lng: 6.762, type: 'Inland Port', volume: '130M tonnes/year', cargo: 'Steel, containers, bulk — world\'s largest inland port' },
+        { name: 'Düsseldorf', lat: 51.225, lng: 6.774, type: 'Inland Port', volume: '12M tonnes/year', cargo: 'Petroleum products, chemicals, bulk' },
+        { name: 'Cologne', lat: 50.934, lng: 6.960, type: 'Inland Port', volume: '10M tonnes/year', cargo: 'Petroleum products, bulk, containers' },
+        { name: 'Bonn', lat: 50.733, lng: 7.099, type: 'Inland Port', volume: '3M tonnes/year', cargo: 'Bulk goods, petroleum' },
+        { name: 'Koblenz', lat: 50.360, lng: 7.598, type: 'Inland Port', volume: '4M tonnes/year', cargo: 'Bulk goods, petroleum products' },
+        { name: 'Mainz', lat: 49.998, lng: 8.272, type: 'Inland Port', volume: '6M tonnes/year', cargo: 'Petroleum products, chemicals, bulk' },
+        { name: 'Worms', lat: 49.632, lng: 8.360, type: 'Inland Port', volume: '3M tonnes/year', cargo: 'Chemicals, bulk goods' },
+        { name: 'Mannheim / Ludwigshafen', lat: 49.487, lng: 8.433, type: 'Major Inland Port', volume: '8M tonnes/year', cargo: 'Chemicals (BASF), petroleum, containers' },
+        { name: 'Karlsruhe', lat: 49.019, lng: 8.330, type: 'Inland Port', volume: '7M tonnes/year', cargo: 'Petroleum products, bulk — major oil refinery hub' },
+        { name: 'Strasbourg', lat: 48.574, lng: 7.748, type: 'Inland Port', volume: '9M tonnes/year', cargo: 'Petroleum products, containers, bulk' },
+        { name: 'Basel', lat: 47.567, lng: 7.590, type: 'Inland Port', volume: '6M tonnes/year', cargo: 'Petroleum, chemicals, containers — Switzerland gateway' }
+      ]
+    },
+
+    // ── RHINE-MAIN-DANUBE (Europe — transcontinental) ───────────────
+    {
+      name: 'Rhine-Main-Danube Canal',
+      region: 'Europe',
+      color: '#4fc3f7',
+      description: 'Transcontinental waterway. North Sea to Black Sea — 3,500km through 12 countries. Completed 1992.',
+      annualCargo: '10M tonnes/year (canal section)',
+      waypoints: [
+        [49.998, 8.272],[50.113, 8.683],[49.940, 8.810],[49.900, 9.150],
+        [49.800, 9.940],[49.620, 10.380],[49.450, 10.990],[49.448, 11.086],
+        [49.200, 11.570],[48.570, 12.970],[48.300, 14.290],[48.208, 16.373],
+        [47.756, 18.160],[47.500, 18.960],[47.497, 19.046],[46.750, 20.000],
+        [45.250, 19.840],[44.820, 20.460],[44.200, 22.700],[43.745, 24.878],
+        [43.849, 25.954],[43.610, 27.830],[44.170, 28.650]
+      ],
+      ports: [
+        { name: 'Frankfurt (Main)', lat: 50.113, lng: 8.683, type: 'Inland Port', volume: '4M tonnes/year', cargo: 'Containers, bulk, industrial goods' },
+        { name: 'Nuremberg', lat: 49.448, lng: 11.086, type: 'Inland Port', volume: '8M tonnes/year', cargo: 'Containers, industrial goods, bulk' },
+        { name: 'Regensburg', lat: 49.200, lng: 11.570, type: 'Inland Port', volume: '6M tonnes/year', cargo: 'Petroleum, chemicals, containers' },
+        { name: 'Linz', lat: 48.300, lng: 14.290, type: 'Inland Port', volume: '7M tonnes/year', cargo: 'Steel, bulk, petroleum' },
+        { name: 'Vienna', lat: 48.208, lng: 16.373, type: 'Major Inland Port', volume: '10M tonnes/year', cargo: 'Containers, petroleum, bulk' },
+        { name: 'Budapest', lat: 47.497, lng: 19.046, type: 'Major Inland Port', volume: '5M tonnes/year', cargo: 'Petroleum, bulk, containers' },
+        { name: 'Belgrade', lat: 44.820, lng: 20.460, type: 'Inland Port', volume: '4M tonnes/year', cargo: 'Bulk, petroleum, agricultural' },
+        { name: 'Constanta', lat: 44.170, lng: 28.650, type: 'Major Seaport', volume: '60M tonnes/year', cargo: 'Crude oil, grain, containers — Black Sea gateway' }
+      ]
+    },
+
+    // ── ELBE (Europe) ───────────────────────────────────────────────
+    {
+      name: 'Elbe',
+      region: 'Europe',
+      color: '#29b6f6',
+      description: 'Hamburg to Czech Republic. 727km navigable. Key route for German industrial goods and chemical exports.',
+      annualCargo: '20M tonnes/year',
+      waypoints: [
+        [53.880, 8.620],[53.550, 9.970],[53.230, 10.400],[53.050, 10.700],
+        [52.860, 11.430],[51.950, 12.240],[51.330, 12.370],[50.830, 13.320],
+        [50.680, 14.050],[50.450, 14.400]
+      ],
+      ports: [
+        { name: 'Hamburg', lat: 53.550, lng: 9.970, type: 'Major Seaport', volume: '130M tonnes/year', cargo: 'Containers, bulk, petroleum — Germany\'s largest port' },
+        { name: 'Magdeburg', lat: 52.860, lng: 11.430, type: 'Inland Port', volume: '3M tonnes/year', cargo: 'Bulk, containers, industrial goods' },
+        { name: 'Dresden', lat: 50.830, lng: 13.320, type: 'Inland Port', volume: '1M tonnes/year', cargo: 'Bulk goods, industrial cargo' }
+      ]
+    },
+
+    // ── SEINE (Europe) ──────────────────────────────────────────────
+    {
+      name: 'Seine',
+      region: 'Europe',
+      color: '#29b6f6',
+      description: 'Le Havre to Paris. 777km. Key route for French petroleum imports and industrial goods.',
+      annualCargo: '25M tonnes/year',
+      waypoints: [
+        [49.490, 0.107],[49.437, 0.350],[49.430, 1.090],[49.200, 1.450],
+        [48.980, 1.780],[48.860, 2.200],[48.885, 2.347],[48.400, 2.700],[48.190, 3.280]
+      ],
+      ports: [
+        { name: 'Le Havre', lat: 49.490, lng: 0.107, type: 'Major Seaport', volume: '90M tonnes/year', cargo: 'Crude oil, petroleum, containers — France\'s largest port' },
+        { name: 'Rouen', lat: 49.430, lng: 1.090, type: 'Inland Port', volume: '25M tonnes/year', cargo: 'Grain, petroleum, containers — world\'s largest grain port' },
+        { name: 'Paris', lat: 48.885, lng: 2.347, type: 'Inland Port', volume: '20M tonnes/year', cargo: 'Petroleum products, construction materials, containers' }
+      ]
+    },
+
+    // ── MISSISSIPPI (North America) ─────────────────────────────────
+    {
+      name: 'Mississippi',
+      region: 'North America',
+      color: '#26c6da',
+      description: 'Gulf of Mexico to Minneapolis. 3,730km. America\'s most important inland waterway for oil, grain and bulk cargo.',
+      annualCargo: '600M tonnes/year',
+      waypoints: [
+        [29.100, -89.250],[29.950, -90.070],[30.450, -91.190],[31.000, -91.400],
+        [32.350, -90.880],[34.360, -90.570],[35.150, -90.050],[36.350, -89.520],
+        [37.000, -89.180],[38.630, -90.190],[40.610, -91.380],[41.520, -90.580],
+        [43.050, -91.000],[44.020, -91.640],[44.980, -93.260]
+      ],
+      ports: [
+        { name: 'New Orleans', lat: 29.950, lng: -90.070, type: 'Major Seaport', volume: '250M tonnes/year', cargo: 'Crude oil, petroleum, grain, bulk — Gulf gateway' },
+        { name: 'Baton Rouge', lat: 30.450, lng: -91.190, type: 'Inland Port', volume: '90M tonnes/year', cargo: 'Crude oil, petroleum — major refinery hub' },
+        { name: 'Memphis', lat: 35.150, lng: -90.050, type: 'Inland Port', volume: '15M tonnes/year', cargo: 'Bulk, agricultural, petroleum' },
+        { name: 'St. Louis', lat: 38.630, lng: -90.190, type: 'Inland Port', volume: '25M tonnes/year', cargo: 'Grain, bulk, petroleum, containers' }
+      ]
+    },
+
+    // ── ST. LAWRENCE (North America) ────────────────────────────────
+    {
+      name: 'St. Lawrence Seaway',
+      region: 'North America',
+      color: '#26c6da',
+      description: 'Atlantic Ocean to Great Lakes. 3,700km. Canada\'s key trade route for grain, petroleum and bulk cargo.',
+      annualCargo: '40M tonnes/year',
+      waypoints: [
+        [49.170, -65.000],[48.440, -68.520],[46.810, -71.210],[45.508, -73.554],
+        [44.990, -74.720],[44.230, -76.490],[43.695, -79.380],[42.880, -78.870],
+        [43.000, -82.000],[42.100, -86.480],[43.650, -84.560],[46.490, -84.350],
+        [46.780, -92.100]
+      ],
+      ports: [
+        { name: 'Quebec City', lat: 46.810, lng: -71.210, type: 'Seaport', volume: '30M tonnes/year', cargo: 'Petroleum, bulk, grain' },
+        { name: 'Montreal', lat: 45.508, lng: -73.554, type: 'Major Inland Port', volume: '35M tonnes/year', cargo: 'Petroleum, containers, bulk, grain' },
+        { name: 'Toronto', lat: 43.695, lng: -79.380, type: 'Inland Port', volume: '10M tonnes/year', cargo: 'Bulk, petroleum, industrial goods' },
+        { name: 'Duluth', lat: 46.780, lng: -92.100, type: 'Inland Port', volume: '35M tonnes/year', cargo: 'Iron ore, grain, coal' }
+      ]
+    },
+
+    // ── YANGTZE (Asia) ──────────────────────────────────────────────
+    {
+      name: 'Yangtze',
+      region: 'Asia',
+      color: '#4dd0e1',
+      description: 'Shanghai to Chongqing. 2,400km navigable. China\'s most important inland waterway and global trade artery.',
+      annualCargo: '3.8B tonnes/year',
+      waypoints: [
+        [31.390, 121.870],[31.700, 121.500],[31.900, 120.870],[32.060, 118.780],
+        [31.820, 117.280],[30.580, 114.310],[30.310, 112.430],[30.690, 111.280],
+        [29.560, 106.550]
+      ],
+      ports: [
+        { name: 'Shanghai', lat: 31.390, lng: 121.870, type: 'Major Seaport', volume: '750M tonnes/year', cargo: 'Containers, crude oil, bulk — world\'s busiest port' },
+        { name: 'Nanjing', lat: 32.060, lng: 118.780, type: 'Major Inland Port', volume: '200M tonnes/year', cargo: 'Petroleum, chemicals, containers, bulk' },
+        { name: 'Wuhan', lat: 30.580, lng: 114.310, type: 'Major Inland Port', volume: '120M tonnes/year', cargo: 'Steel, containers, petroleum, bulk' },
+        { name: 'Yichang', lat: 30.690, lng: 111.280, type: 'Inland Port', volume: '50M tonnes/year', cargo: 'Bulk goods, petroleum' },
+        { name: 'Chongqing', lat: 29.560, lng: 106.550, type: 'Inland Port', volume: '200M tonnes/year', cargo: 'Containers, industrial goods, bulk' }
+      ]
+    },
+
+    // ── AMAZON (South America) ──────────────────────────────────────
+    {
+      name: 'Amazon',
+      region: 'South America',
+      color: '#26c6da',
+      description: 'Atlantic to Peru. 3,700km navigable. Key route for South American agricultural and petroleum exports.',
+      annualCargo: '15M tonnes/year',
+      waypoints: [
+        [-1.460, -48.510],[-1.450, -48.500],[-2.440, -54.710],
+        [-3.100, -60.020],[-3.700, -73.250]
+      ],
+      ports: [
+        { name: 'Belém', lat: -1.460, lng: -48.510, type: 'Seaport', volume: '10M tonnes/year', cargo: 'Agricultural goods, timber, petroleum' },
+        { name: 'Manaus', lat: -3.100, lng: -60.020, type: 'Major Inland Port', volume: '8M tonnes/year', cargo: 'Electronics, petroleum, agricultural goods' },
+        { name: 'Iquitos', lat: -3.700, lng: -73.250, type: 'Inland Port', volume: '2M tonnes/year', cargo: 'Petroleum, agricultural goods' }
+      ]
+    },
+
+    // ── PARANÁ / RÍO DE LA PLATA (South America) ───────────────────
+    {
+      name: 'Paraná / Río de la Plata',
+      region: 'South America',
+      color: '#26c6da',
+      description: 'Buenos Aires to Asunción. 3,400km. South America\'s main grain and petroleum export corridor.',
+      annualCargo: '100M tonnes/year',
+      waypoints: [
+        [-34.600, -58.370],[-34.000, -58.500],[-33.100, -60.650],
+        [-31.730, -60.520],[-30.000, -59.000],[-27.470, -58.840],[-25.290, -57.640]
+      ],
+      ports: [
+        { name: 'Buenos Aires', lat: -34.600, lng: -58.370, type: 'Major Seaport', volume: '100M tonnes/year', cargo: 'Grain, petroleum, containers' },
+        { name: 'Rosario', lat: -33.100, lng: -60.650, type: 'Major Inland Port', volume: '80M tonnes/year', cargo: 'Grain, soybeans, petroleum — world\'s largest grain export hub' },
+        { name: 'Asunción', lat: -25.290, lng: -57.640, type: 'Inland Port', volume: '5M tonnes/year', cargo: 'Grain, soybeans, petroleum' }
+      ]
+    },
+
+    // ── VOLGA (Russia) ──────────────────────────────────────────────
+    {
+      name: 'Volga',
+      region: 'Europe / Russia',
+      color: '#29b6f6',
+      description: 'Caspian Sea to Moscow Canal. 3,530km. Russia\'s main petroleum and bulk cargo inland route.',
+      annualCargo: '80M tonnes/year',
+      waypoints: [
+        [43.400, 51.900],[48.700, 44.510],[51.530, 46.030],[53.200, 50.150],
+        [55.790, 49.120],[56.330, 44.000],[57.620, 39.890],[56.840, 35.920],[56.850, 37.614]
+      ],
+      ports: [
+        { name: 'Astrakhan', lat: 43.400, lng: 51.900, type: 'Caspian Port', volume: '10M tonnes/year', cargo: 'Petroleum, fish, bulk — Caspian gateway' },
+        { name: 'Volgograd', lat: 48.700, lng: 44.510, type: 'Inland Port', volume: '12M tonnes/year', cargo: 'Petroleum, grain, bulk' },
+        { name: 'Samara', lat: 53.200, lng: 50.150, type: 'Inland Port', volume: '8M tonnes/year', cargo: 'Petroleum, bulk, industrial goods' },
+        { name: 'Kazan', lat: 55.790, lng: 49.120, type: 'Inland Port', volume: '6M tonnes/year', cargo: 'Petroleum, bulk goods' },
+        { name: 'Nizhny Novgorod', lat: 56.330, lng: 44.000, type: 'Inland Port', volume: '10M tonnes/year', cargo: 'Petroleum, bulk, industrial goods' }
+      ]
+    },
+
+    // ── IRRAWADDY (Asia) ────────────────────────────────────────────
+    {
+      name: 'Irrawaddy',
+      region: 'Asia',
+      color: '#4dd0e1',
+      description: 'Yangon to Mandalay. 1,350km navigable. Myanmar\'s main inland cargo route.',
+      annualCargo: '5M tonnes/year',
+      waypoints: [
+        [16.850, 96.180],[17.800, 95.300],[18.820, 95.210],[20.150, 94.900],[21.960, 96.080]
+      ],
+      ports: [
+        { name: 'Yangon', lat: 16.850, lng: 96.180, type: 'Major Seaport', volume: '15M tonnes/year', cargo: 'Petroleum, containers, bulk — Myanmar\'s main port' },
+        { name: 'Mandalay', lat: 21.960, lng: 96.080, type: 'Inland Port', volume: '2M tonnes/year', cargo: 'Agricultural goods, petroleum, bulk' }
+      ]
+    },
+
+    // ── CONGO (Africa) ──────────────────────────────────────────────
+    {
+      name: 'Congo',
+      region: 'Africa',
+      color: '#26c6da',
+      description: 'Atlantic to Kisangani. 1,600km navigable. Central Africa\'s main trade artery.',
+      annualCargo: '3M tonnes/year',
+      waypoints: [
+        [-5.800, 12.450],[-4.320, 15.320],[-0.520, 17.340],[0.520, 25.200]
+      ],
+      ports: [
+        { name: 'Matadi', lat: -5.800, lng: 12.450, type: 'Seaport', volume: '5M tonnes/year', cargo: 'Petroleum, containers, bulk' },
+        { name: 'Kinshasa', lat: -4.320, lng: 15.320, type: 'Major Inland Port', volume: '3M tonnes/year', cargo: 'Bulk goods, agricultural, petroleum' },
+        { name: 'Kisangani', lat: 0.520, lng: 25.200, type: 'Inland Port', volume: '0.5M tonnes/year', cargo: 'Agricultural goods, timber' }
+      ]
+    }
+
+  ];
+
+  // ── RENDER RIVER SYSTEMS ─────────────────────────────────────────
+  (function renderRiverSystems() {
+    RIVER_SYSTEMS.forEach(function(river) {
+      // Draw river line
+      L.polyline(river.waypoints, {
+        color: river.color,
+        weight: 3,
+        opacity: 0.75,
+        smoothFactor: 1.5
+      }).bindTooltip(river.name + ' (' + river.region + ')', {
+        permanent: false,
+        className: 'chokepoint-tip'
+      }).bindPopup(
+        '<div style="font-family:\'Inter\',sans-serif;min-width:240px;">'
+        + '<div style="background:linear-gradient(135deg,#1a2a4a,#0d1b2a);padding:12px 14px;margin:-10px -14px 10px;border-radius:6px 6px 0 0;">'
+        + '<div style="color:' + river.color + ';font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">RIVER SYSTEM — ' + river.region.toUpperCase() + '</div>'
+        + '<div style="color:#e8eaf6;font-size:16px;font-weight:700;">' + river.name + '</div>'
+        + '</div>'
+        + '<p style="font-size:12px;color:#8a9ab8;line-height:1.6;padding:0 2px;">' + river.description + '</p>'
+        + '<div style="background:#0d1b2a;border-radius:6px;padding:8px 10px;margin-top:8px;">'
+        + '<div style="color:#29b6f6;font-size:10px;font-weight:700;letter-spacing:1px;margin-bottom:4px;">ANNUAL CARGO</div>'
+        + '<div style="color:#e8eaf6;font-size:13px;font-weight:600;">' + river.annualCargo + '</div>'
+        + '</div></div>',
+        { className: 'oil-popup', maxWidth: 300 }
+      ).addTo(layers.rivers);
+
+      // Draw inland port markers
+      river.ports.forEach(function(port) {
+        var portIcon = L.divIcon({
+          className: '',
+          html: '<div style="width:9px;height:9px;background:' + river.color + ';border:2px solid rgba(255,255,255,0.85);border-radius:50%;box-shadow:0 0 5px ' + river.color + '99;"></div>',
+          iconSize: [9, 9],
+          iconAnchor: [4, 4]
+        });
+        L.marker([port.lat, port.lng], { icon: portIcon })
+          .bindPopup(
+            '<div style="font-family:\'Inter\',sans-serif;min-width:220px;">'
+            + '<div style="background:linear-gradient(135deg,#1a2a4a,#0d1b2a);padding:10px 14px;margin:-10px -14px 10px;border-radius:6px 6px 0 0;">'
+            + '<div style="color:' + river.color + ';font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">INLAND PORT — ' + river.name.toUpperCase() + '</div>'
+            + '<div style="color:#e8eaf6;font-size:15px;font-weight:700;">' + port.name + '</div>'
+            + '</div>'
+            + '<table style="width:100%;font-size:12px;border-collapse:collapse;padding:0 2px;">'
+            + '<tr><td style="color:#8a9ab8;padding:3px 0;width:60px;">Type</td><td style="color:#e8eaf6;text-align:right;">' + port.type + '</td></tr>'
+            + '<tr><td style="color:#8a9ab8;padding:3px 0;">Volume</td><td style="color:#e8eaf6;text-align:right;">' + port.volume + '</td></tr>'
+            + '</table>'
+            + '<div style="background:#0d1b2a;border-radius:6px;padding:8px 10px;margin-top:8px;">'
+            + '<div style="color:#29b6f6;font-size:10px;font-weight:700;letter-spacing:1px;margin-bottom:4px;">CARGO TYPES</div>'
+            + '<div style="color:#8a9ab8;font-size:11px;line-height:1.5;">' + port.cargo + '</div>'
+            + '</div></div>',
+            { className: 'oil-popup', maxWidth: 280 }
+          )
+          .bindTooltip(port.name, { permanent: false, className: 'chokepoint-tip' })
+          .addTo(layers.rivers);
+      });
+    });
+  })();
 
   window.toggleLayer = function(name, btn){
     if(states[name]){
