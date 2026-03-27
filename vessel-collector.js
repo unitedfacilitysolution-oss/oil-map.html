@@ -947,20 +947,24 @@ async function main() {
     headers: { ...headers, 'Prefer': 'return=minimal' },
     body: JSON.stringify(historyRows),
   });
-  console.log(`  Insert history: HTTP ${histRes.status}`);
+  if (!histRes.ok) {
+    const err = await histRes.text();
+    console.log(`  Insert history: HTTP ${histRes.status} — ${err}`);
+  } else {
+    console.log(`  Insert history: HTTP ${histRes.status}`);
+  }
 
-  // Insert predictions
+  // Insert predictions — using table column names: route_name, predicted_destination, confidence, signal_used
   const predRows = finalVessels.map(v => {
     const profile = existingProfileMap[v.mmsi];
     const pred = predictRoute(v, v.vessel_class, profile);
     return {
       mmsi: v.mmsi,
       vessel_name: v.name,
-      predicted_route: pred.route,
+      route_name: pred.route,
       predicted_destination: pred.route.split('→')[1]?.trim() || null,
       confidence: pred.confidence,
       signal_used: pred.signal,
-      recorded_at: v.last_updated,
     };
   });
 
@@ -969,7 +973,12 @@ async function main() {
     headers: { ...headers, 'Prefer': 'return=minimal' },
     body: JSON.stringify(predRows),
   });
-  console.log(`  Insert predictions: HTTP ${predRes.status}`);
+  if (!predRes.ok) {
+    const err = await predRes.text();
+    console.log(`  Insert predictions: HTTP ${predRes.status} — ${err}`);
+  } else {
+    console.log(`  Insert predictions: HTTP ${predRes.status}`);
+  }
 
   // Upsert vessel profiles
   const profileRows = finalVessels.map(v => {
@@ -996,7 +1005,12 @@ async function main() {
     headers: { ...headers, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify(profileRows),
   });
-  console.log(`  Upsert profiles: HTTP ${profRes.status}`);
+  if (!profRes.ok) {
+    const err = await profRes.text();
+    console.log(`  Upsert profiles: HTTP ${profRes.status} — ${err}`);
+  } else {
+    console.log(`  Upsert profiles: HTTP ${profRes.status}`);
+  }
 
   // Apply voyage updates
   for (const update of allVoyageUpdates) {
