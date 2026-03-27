@@ -8867,12 +8867,31 @@ var smallFields = [
       description: 'Transcontinental waterway. North Sea to Black Sea — 3,500km through 12 countries. Completed 1992.',
       annualCargo: '10M tonnes/year (canal section)',
       waypoints: [
+        // Main River
         [49.998, 8.272],[50.113, 8.683],[49.940, 8.810],[49.900, 9.150],
         [49.800, 9.940],[49.620, 10.380],[49.450, 10.990],[49.448, 11.086],
-        [49.200, 11.570],[48.570, 12.970],[48.300, 14.290],[48.208, 16.373],
-        [47.756, 18.160],[47.500, 18.960],[47.497, 19.046],[46.750, 20.000],
-        [45.250, 19.840],[44.820, 20.460],[44.200, 22.700],[43.745, 24.878],
-        [43.849, 25.954],[43.610, 27.830],[44.170, 28.650]
+        // Danube — Regensburg to Vienna
+        [49.200, 11.570],[48.850, 12.580],[48.570, 12.970],[48.420, 13.480],
+        [48.300, 14.290],[48.210, 14.890],[48.120, 15.640],[48.190, 16.120],
+        [48.208, 16.373],
+        // Vienna to Budapest
+        [47.980, 16.960],[48.143, 17.107],[47.800, 17.600],[47.756, 18.160],
+        [47.760, 18.780],[47.497, 19.046],
+        // Budapest to Belgrade
+        [46.870, 18.960],[46.440, 18.920],[45.910, 18.820],[45.250, 19.840],
+        [44.820, 20.460],
+        // Belgrade to Iron Gates — follows Serbia/Romania border east
+        [44.660, 20.930],[44.820, 21.350],[44.650, 21.630],[44.560, 22.030],
+        [44.620, 22.620],
+        // Romania/Bulgaria border — river flows EAST along border
+        [44.215, 22.676],[43.990, 22.890],[43.900, 23.220],[43.790, 23.720],
+        [43.750, 24.420],[43.745, 24.878],[43.850, 25.400],[43.890, 25.954],
+        [43.990, 26.380],[44.200, 27.340],
+        // Northeast to delta
+        [44.340, 28.030],[44.640, 28.120],[45.150, 28.720],[45.450, 28.050],
+        [45.220, 28.780],[45.150, 29.600],
+        // Constanța via canal
+        [44.170, 28.650]
       ],
       ports: [
         { name: 'Frankfurt (Main)', lat: 50.113, lng: 8.683, type: 'Inland Port', volume: '4M tonnes/year', cargo: 'Containers, bulk, industrial goods' },
@@ -8880,8 +8899,12 @@ var smallFields = [
         { name: 'Regensburg', lat: 49.200, lng: 11.570, type: 'Inland Port', volume: '6M tonnes/year', cargo: 'Petroleum, chemicals, containers' },
         { name: 'Linz', lat: 48.300, lng: 14.290, type: 'Inland Port', volume: '7M tonnes/year', cargo: 'Steel, bulk, petroleum' },
         { name: 'Vienna', lat: 48.208, lng: 16.373, type: 'Major Inland Port', volume: '10M tonnes/year', cargo: 'Containers, petroleum, bulk' },
+        { name: 'Bratislava', lat: 48.143, lng: 17.107, type: 'Inland Port', volume: '5M tonnes/year', cargo: 'Petroleum, bulk, containers' },
         { name: 'Budapest', lat: 47.497, lng: 19.046, type: 'Major Inland Port', volume: '5M tonnes/year', cargo: 'Petroleum, bulk, containers' },
+        { name: 'Novi Sad', lat: 45.250, lng: 19.840, type: 'Inland Port', volume: '3M tonnes/year', cargo: 'Agricultural goods, bulk' },
         { name: 'Belgrade', lat: 44.820, lng: 20.460, type: 'Inland Port', volume: '4M tonnes/year', cargo: 'Bulk, petroleum, agricultural' },
+        { name: 'Giurgiu', lat: 43.890, lng: 25.954, type: 'Inland Port', volume: '3M tonnes/year', cargo: 'Bulk, petroleum, agricultural' },
+        { name: 'Galați', lat: 45.450, lng: 28.050, type: 'Major Inland Port', volume: '15M tonnes/year', cargo: 'Steel, bulk, petroleum' },
         { name: 'Constanta', lat: 44.170, lng: 28.650, type: 'Major Seaport', volume: '60M tonnes/year', cargo: 'Crude oil, grain, containers — Black Sea gateway' }
       ]
     },
@@ -11135,6 +11158,8 @@ var smallFields = [
       if (lng > -6 && lng < 42 && lat > 30 && lat < 46) return 'Mediterranean';
       // Black Sea
       if (lng > 27 && lng < 42 && lat > 40 && lat < 47) return 'BlackSea';
+      // Also catch vessels in western Black Sea near Bulgaria/Romania coast
+      if (lng > 27 && lng < 32 && lat > 42 && lat < 47) return 'BlackSea';
       // Baltic Sea
       if (lng > 9 && lng < 30 && lat > 54 && lat < 66) return 'Baltic';
       // Persian Gulf
@@ -11164,7 +11189,20 @@ var smallFields = [
         'RedSea':    [[30.7,32.5],[28.0,33.5],[22.0,37.5],[12.5,43.5]],  // Suez Canal
       },
       'BlackSea': {
-        'Mediterranean': [[41.5,29.5],[40.5,27.5],[40.0,26.2],[38.5,25.0],[36.5,22.0]], // Bosphorus+Dardanelles
+        // Follows Turkish and Bulgarian coastline — no overland shortcuts
+        // From Black Sea → south along Bulgarian coast → Istanbul → Bosphorus → Dardanelles → Med
+        'Mediterranean': [
+          [43.200, 28.000], // Bulgarian coast south of Varna
+          [42.500, 27.700], // Bulgarian/Turkish coast
+          [41.970, 28.100], // Turkish coast north of Istanbul
+          [41.500, 29.100], // Bosphorus northern entrance
+          [41.200, 29.100], // Istanbul / Bosphorus
+          [40.700, 27.500], // Sea of Marmara
+          [40.200, 26.400], // Dardanelles entrance
+          [39.800, 26.000], // Dardanelles exit / Aegean
+          [38.500, 25.000], // Aegean Sea
+          [36.500, 22.000], // South Greece / Med
+        ],
       },
       'Baltic': {
         'NorthSea':  [[56.0,12.6],[57.0,10.0],[57.5,8.0],[56.0,5.0]], // Oresund
@@ -11357,7 +11395,15 @@ var smallFields = [
             pred.route_name = profile.typical_routes[0];
           }
           return { vessel: v, prediction: pred || null, profile: profile || null };
-        }).filter(function(d) { return d.vessel.lat !== 0 && d.vessel.lng !== 0; });
+        }).filter(function(d) {
+          // Filter out zero positions
+          if (!d.vessel.lat || !d.vessel.lng) return false;
+          if (d.vessel.lat === 0 && d.vessel.lng === 0) return false;
+          // Filter out impossible speeds — no tanker exceeds 30 knots
+          // Ghost AIS signals often show 50-100+ knots
+          if (d.vessel.speed > 30) return false;
+          return true;
+        });
 
         // Fallback sample data if Supabase returns empty
         if (_cargoData.length === 0) {
